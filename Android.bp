@@ -1,8 +1,18 @@
 
 android_app {
     name: "FdeAiAgent",
-    srcs: ["**/*.kt","**/*.java"],
-	resource_dirs: ["res"],
+    srcs: [
+        "app/src/main/java/**/*.kt",
+        "app/src/main/java/**/*.java",
+        "app/src/main/java/**/*.aidl",
+
+    ],
+    resource_dirs: [
+        "app/src/main/res",
+    ],
+    asset_dirs: [
+        "app/src/main/assets",
+    ],
     platform_apis: true,
     system_ext_specific: true,
     certificate: "platform",
@@ -20,6 +30,6 @@ android_app {
 		"kotlinx-coroutines-android",
         "kotlinx-coroutines-core",
 		"kotlin-stdlib",     ],
-	manifest: "AndroidManifest.xml",
+	manifest: "app/src/main/AndroidManifest.xml",
 }
 
