@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 桌面风格输入框：白底 + 细边框，聚焦时高亮蓝色描边；支持鼠标悬停 -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_focused="true">
+        <shape android:shape="rectangle">
+            <solid android:color="#FFFFFF" />
+            <stroke
+                android:width="1.5dp"
+                android:color="@color/pc_primary" />
+            <corners android:radius="6dp" />
+        </shape>
+    </item>
+    <item android:state_enabled="false">
+        <shape android:shape="rectangle">
+            <solid android:color="@color/pc_input_bg_disabled" />
+            <stroke
+                android:width="1dp"
+                android:color="@color/pc_panel_border" />
+            <corners android:radius="6dp" />
+        </shape>
+    </item>
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="#FFFFFF" />
+            <stroke
+                android:width="1dp"
+                android:color="@color/pc_input_border" />
+            <corners android:radius="6dp" />
+        </shape>
+    </item>
+</selector>

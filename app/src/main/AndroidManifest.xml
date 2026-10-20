@@ -14,7 +14,8 @@
 
     <application
         android:label="FDE AI Agent"
-        android:allowBackup="false">
+        android:allowBackup="false"
+        android:theme="@style/Theme.FdeDownload">
 
         <activity
             android:name=".MainActivity"

@@ -1,97 +1,305 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
+<!-- ===================================================================
+     FDE AI Agent — PC(桌面)风格界面
+     顶栏 + 双栏布局：左侧「智能体配置」，右侧「运行日志」控制台
+     =================================================================== -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:scrollbars="vertical"
-    android:scrollbarStyle="insideOverlay"
-    android:fadeScrollbars="false"
-    android:fillViewport="true">
+    android:background="@color/pc_window_bg"
+    android:orientation="vertical">
 
-    <androidx.constraintlayout.widget.ConstraintLayout
-        android:id="@+id/main"
+    <!-- 顶栏 -->
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+        android:layout_height="56dp"
+        android:background="@color/pc_header_bg"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="20dp"
+        android:paddingEnd="20dp">
 
+        <ImageView
+            android:layout_width="28dp"
+            android:layout_height="28dp"
+            android:contentDescription="@string/app_name"
+            android:src="@mipmap/ic_launcher" />
 
-    
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="12dp"
+            android:text="FDE AI Agent"
+            android:textColor="@color/pc_text_primary"
+            android:textSize="17sp"
+            android:textStyle="bold" />
 
-    <!-- ================= DeepSeek + AppFunctions demo ================= -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="12dp"
+            android:text="DeepSeek × AppFunctions"
+            android:textColor="@color/pc_text_secondary"
+            android:textSize="12sp" />
 
-    <EditText
-        android:id="@+id/editDeepSeekKey"
+        <View
+            android:layout_width="0dp"
+            android:layout_height="1dp"
+            android:layout_weight="1" />
+
+        <TextView
+            android:id="@+id/tvStatus"
+            android:layout_width="wrap_content"
+            android:layout_height="26dp"
+            android:background="@drawable/bg_chip"
+            android:gravity="center"
+            android:paddingStart="14dp"
+            android:paddingEnd="14dp"
+            android:text="就绪"
+            android:textColor="@color/pc_primary"
+            android:textSize="12sp"
+            tools:text="就绪" />
+    </LinearLayout>
+
+    <View
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="16dp"
-        android:layout_marginEnd="16dp"
-        android:layout_marginTop="24dp"
-        android:hint="DeepSeek API Key (sk-...)"
-        android:inputType="textPassword"
-        android:textSize="14sp" />
+        android:layout_height="1dp"
+        android:background="@color/pc_divider" />
 
-    <EditText
-        android:id="@+id/editImagePath"
+    <!-- 主体：双栏 -->
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="16dp"
-        android:layout_marginEnd="16dp"
-        android:hint="/mnt/sdcard/Pictures/aa.png"
-        android:inputType="text"
-        android:textSize="14sp"
-        app:layout_constraintTop_toBottomOf="@id/editDeepSeekKey" />
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:orientation="horizontal"
+        android:padding="16dp">
 
-    <EditText
-        android:id="@+id/editAgentPrompt"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="16dp"
-        android:layout_marginEnd="16dp"
-        android:hint="对智能体说点什么，例如：帮我打开这张图片"
-        android:inputType="text"
-        android:textSize="14sp"
-        app:layout_constraintTop_toBottomOf="@id/editImagePath" />
+        <!-- 左栏：智能体配置 -->
+        <LinearLayout
+            android:layout_width="370dp"
+            android:layout_height="match_parent"
+            android:background="@drawable/bg_panel"
+            android:orientation="vertical"
+            android:padding="24dp">
 
-    <Button
-        android:id="@+id/btnRunAgent"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="16dp"
-        android:text="运行智能体"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/editAgentPrompt" />
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="智能体配置"
+                android:textAppearance="@style/TextAppearance.PcSectionTitle" />
 
-    <Button
-        android:id="@+id/btnOpenGallery"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="8dp"
-        android:text="打开相册"
-        app:layout_constraintStart_toEndOf="@id/btnRunAgent"
-        app:layout_constraintTop_toBottomOf="@id/editAgentPrompt" />
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:layout_marginTop="12dp"
+                android:layout_marginBottom="18dp"
+                android:background="@color/pc_divider" />
 
-    <Button
-        android:id="@+id/btnGrantFunctionPermission"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="8dp"
-        android:text="权限说明"
-        android:visibility="visible"
-        app:layout_constraintStart_toEndOf="@id/btnOpenGallery"
-        app:layout_constraintTop_toBottomOf="@id/editAgentPrompt" />
+            <!-- DeepSeek API Key -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="DeepSeek API Key"
+                android:textAppearance="@style/TextAppearance.PcLabel" />
 
-    <TextView
-        android:id="@+id/tvAgentLog"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_margin="16dp"
-        android:background="#11000000"
-        android:fontFamily="monospace"
-        android:padding="8dp"
-        android:text="等待运行…"
-        android:textSize="12sp"
-        app:layout_constraintTop_toBottomOf="@id/btnRunAgent" />
+            <EditText
+                android:id="@+id/editDeepSeekKey"
+                android:layout_width="match_parent"
+                android:layout_height="44dp"
+                android:layout_marginTop="6dp"
+                android:background="@drawable/bg_input"
+                android:hint="sk-..."
+                android:inputType="textPassword"
+                android:paddingStart="14dp"
+                android:paddingEnd="14dp"
+                android:singleLine="true"
+                android:textColor="@color/pc_text_primary"
+                android:textSize="14sp" />
 
-    </androidx.constraintlayout.widget.ConstraintLayout>
+            <!-- 媒体文件路径 -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="18dp"
+                android:text="媒体文件路径"
+                android:textAppearance="@style/TextAppearance.PcLabel" />
 
-</ScrollView>
+            <EditText
+                android:id="@+id/editImagePath"
+                android:layout_width="match_parent"
+                android:layout_height="44dp"
+                android:layout_marginTop="6dp"
+                android:background="@drawable/bg_input"
+                android:hint="/mnt/sdcard/Pictures/aa.png"
+                android:inputType="text"
+                android:paddingStart="14dp"
+                android:paddingEnd="14dp"
+                android:singleLine="true"
+                android:textColor="@color/pc_text_primary"
+                android:textSize="14sp" />
+
+            <!-- 智能体指令 -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="18dp"
+                android:text="智能体指令（Prompt）"
+                android:textAppearance="@style/TextAppearance.PcLabel" />
+
+            <EditText
+                android:id="@+id/editAgentPrompt"
+                android:layout_width="match_parent"
+                android:layout_height="96dp"
+                android:layout_marginTop="6dp"
+                android:background="@drawable/bg_input"
+                android:gravity="top|start"
+                android:hint="例如：帮我打开这张图片"
+                android:inputType="textMultiLine|textCapSentences"
+                android:paddingStart="14dp"
+                android:paddingTop="10dp"
+                android:paddingEnd="14dp"
+                android:paddingBottom="10dp"
+                android:textColor="@color/pc_text_primary"
+                android:textSize="14sp" />
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1" />
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:layout_marginBottom="18dp"
+                android:background="@color/pc_divider" />
+
+            <!-- 主操作：运行智能体 -->
+            <Button
+                android:id="@+id/btnRunAgent"
+                android:layout_width="match_parent"
+                android:layout_height="46dp"
+                android:background="@drawable/bg_btn_primary"
+                android:stateListAnimator="@null"
+                android:text="运行智能体"
+                android:textColor="#FFFFFF"
+                android:textSize="15sp"
+                android:textStyle="bold" />
+
+            <!-- 次级操作 -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:orientation="horizontal">
+
+                <Button
+                    android:id="@+id/btnOpenGallery"
+                    android:layout_width="0dp"
+                    android:layout_height="40dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/bg_btn_secondary"
+                    android:stateListAnimator="@null"
+                    android:text="打开相册"
+                    android:textColor="@color/pc_text_regular"
+                    android:textSize="13sp" />
+
+                <Button
+                    android:id="@+id/btnGrantFunctionPermission"
+                    android:layout_width="0dp"
+                    android:layout_height="40dp"
+                    android:layout_marginStart="10dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/bg_btn_secondary"
+                    android:stateListAnimator="@null"
+                    android:text="权限说明"
+                    android:textColor="@color/pc_text_regular"
+                    android:textSize="13sp" />
+
+                <Button
+                    android:id="@+id/btnClearLog"
+                    android:layout_width="0dp"
+                    android:layout_height="40dp"
+                    android:layout_marginStart="10dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/bg_btn_secondary"
+                    android:stateListAnimator="@null"
+                    android:text="清空日志"
+                    android:textColor="@color/pc_text_regular"
+                    android:textSize="13sp" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <Space
+            android:layout_width="16dp"
+            android:layout_height="match_parent" />
+
+        <!-- 右栏：运行日志控制台 -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:background="@drawable/bg_panel"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="运行日志"
+                    android:textAppearance="@style/TextAppearance.PcSectionTitle" />
+
+                <View
+                    android:layout_width="0dp"
+                    android:layout_height="1dp"
+                    android:layout_weight="1" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="monospace"
+                    android:text="model: deepseek-chat"
+                    android:textColor="@color/pc_text_secondary"
+                    android:textSize="11sp" />
+            </LinearLayout>
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:layout_marginTop="12dp"
+                android:layout_marginBottom="12dp"
+                android:background="@color/pc_divider" />
+
+            <ScrollView
+                android:id="@+id/svLog"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:background="@drawable/bg_console"
+                android:clipToPadding="false"
+                android:fadeScrollbars="false"
+                android:fillViewport="true"
+                android:padding="14dp"
+                android:scrollbars="vertical">
+
+                <TextView
+                    android:id="@+id/tvAgentLog"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="monospace"
+                    android:lineSpacingExtra="3dp"
+                    android:text="等待运行…"
+                    android:textColor="@color/pc_console_text"
+                    android:textIsSelectable="true"
+                    android:textSize="13sp" />
+            </ScrollView>
+        </LinearLayout>
+    </LinearLayout>
+</LinearLayout>

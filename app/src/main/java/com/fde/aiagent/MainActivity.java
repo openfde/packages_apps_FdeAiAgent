@@ -7,6 +7,7 @@ import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -31,7 +32,7 @@ public class MainActivity extends Activity {
     private static final String TAG = "FdeAiAgent";
 
     private static final String PREFS = "fde_ai_agent";
-    private static final String KEY_API = "";
+    private static final String KEY_API = "sk-3f6a5973c15e4ad79a020b3bd44150eb";
     private static final String KEY_PATH = "image_path";
     private static final String KEY_PROMPT = "prompt";
 
@@ -39,6 +40,7 @@ public class MainActivity extends Activity {
     private EditText editPath;
     private EditText editPrompt;
     private TextView tvLog;
+    private ScrollView svLog;
     private SharedPreferences prefs;
 
     @Override
@@ -46,7 +48,9 @@ public class MainActivity extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        getActionBar().hide();
+        if (getActionBar() != null) {
+            getActionBar().hide();
+        }
 
         prefs = getSharedPreferences(PREFS, Context.MODE_PRIVATE);
 
@@ -54,6 +58,7 @@ public class MainActivity extends Activity {
         editPath = findViewById(R.id.editImagePath);
         editPrompt = findViewById(R.id.editAgentPrompt);
         tvLog = findViewById(R.id.tvAgentLog);
+        svLog = findViewById(R.id.svLog);
 
         // 直接从 SharedPreferences 恢复上次保存的配置（自配置 DeepSeek Key 等）。
         editKey.setText(prefs.getString(KEY_API, KEY_API));
@@ -63,10 +68,12 @@ public class MainActivity extends Activity {
         Button btnRun = findViewById(R.id.btnRunAgent);
         Button btnOpen = findViewById(R.id.btnOpenGallery);
         Button btnPermission = findViewById(R.id.btnGrantFunctionPermission);
+        Button btnClear = findViewById(R.id.btnClearLog);
 
         btnRun.setOnClickListener(v -> runAgent());
         btnOpen.setOnClickListener(v -> openImageDirect());
         btnPermission.setOnClickListener(v -> showPermissionStatus());
+        btnClear.setOnClickListener(v -> tvLog.setText(""));
     }
 
     private void runAgent() {
@@ -137,6 +144,8 @@ public class MainActivity extends Activity {
         runOnUiThread(() -> {
             String prev = tvLog.getText().toString();
             tvLog.setText(prev + (prev.endsWith("\n") || prev.isEmpty() ? "" : "\n") + line);
+            // 控制台自动滚动到底部（PC 终端习惯）
+            svLog.post(() -> svLog.fullScroll(View.FOCUS_DOWN));
         });
     }
 

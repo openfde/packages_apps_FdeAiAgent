@@ -42,4 +42,35 @@
     <color name="update_bg">#ebf5ff</color>
     <color name="install_bg">#0080ff</color>
     <color name="install_bg_un">#87CEFA</color>
+
+    <!-- ================= PC(桌面) 风格配色，基于 Element-UI 色板 ================= -->
+    <color name="pc_primary">#409EFF</color>
+    <color name="pc_primary_hover">#66B1FF</color>
+    <color name="pc_primary_pressed">#3A8EE6</color>
+    <color name="pc_primary_light">#ECF5FF</color>
+    <color name="pc_primary_border">#B3D8FF</color>
+
+    <color name="pc_window_bg">#F0F2F5</color>
+    <color name="pc_header_bg">#FFFFFF</color>
+    <color name="pc_panel_bg">#FFFFFF</color>
+    <color name="pc_panel_border">#E4E7ED</color>
+
+    <color name="pc_text_primary">#303133</color>
+    <color name="pc_text_regular">#606266</color>
+    <color name="pc_text_secondary">#909399</color>
+    <color name="pc_divider">#EBEEF5</color>
+    <color name="pc_input_border">#DCDFE6</color>
+    <color name="pc_input_bg_disabled">#F5F7FA</color>
+
+    <color name="pc_success">#67C23A</color>
+    <color name="pc_warning">#E6A23C</color>
+    <color name="pc_danger">#F56C6C</color>
+
+    <!-- 日志控制台（深色） -->
+    <color name="pc_console_bg">#1E293B</color>
+    <color name="pc_console_text">#D7E2F0</color>
+    <color name="pc_console_dim">#64748B</color>
+    <color name="pc_console_accent">#66B1FF</color>
+    <color name="pc_console_ok">#67C23A</color>
+    <color name="pc_console_err">#F56C6C</color>
 </resources>
