@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Privileged permission allowlist for FdeAiAgent.
+
+  FdeAiAgent must be able to execute cross-app AppFunctions published by
+  com.fde.gallery3d. Depending on the platform flag
+  (android.permission.flags.app_function_access_api_enabled) EXECUTE_APP_FUNCTIONS is either a
+  "normal" permission (auto granted) or an "internal|privileged" permission that requires a
+  privileged allowlist entry like the one below.
+-->
+<permissions>
+    <privapp-permissions package="com.fde.aiagent">
+        <permission name="android.permission.EXECUTE_APP_FUNCTIONS"/>
+    </privapp-permissions>
+</permissions>

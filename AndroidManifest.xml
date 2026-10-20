@@ -1,0 +1,30 @@
+
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.fde.aiagent">
+
+    <uses-permission
+        android:name="com.fde.permission.CONTROL_SYSTEM" />
+
+    <uses-permission
+        android:name="android.permission.INTERNET" />
+
+    <!-- 跨应用执行 AppFunctions（调用 com.fde.gallery3d 的 openImage / playVideo） -->
+    <uses-permission
+        android:name="android.permission.EXECUTE_APP_FUNCTIONS" />
+
+    <application
+        android:label="FDE AI Agent"
+        android:allowBackup="false">
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+    </application>
+</manifest>
+

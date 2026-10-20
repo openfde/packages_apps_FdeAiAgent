@@ -1,0 +1,27 @@
+<resources>
+    <string name="app_name">FDE Initial Installation Apps</string>
+
+    <string name="skip">Skip</string>
+    <!-- download app page -->
+    <string name="download_app">Download app</string>
+    <string name="download">Download</string>
+    <string name="cancel">Cancel</string>
+    <string name="start_download">Start download</string>
+    <string name="download_failed">Download failed</string>
+    <string name="retry">Retry</string>
+    <string name="installing">Installing</string>
+    <string name="installed">Installed</string>
+    <string name="install">Install</string>
+    <string name="prev_button_text">Prev</string>
+    <string name="next_button_text">Next</string>
+    <string name="return_button_text">Return</string>
+    <string name="done_button_text">Done</string>
+    <string name="setup_succeeded">Setup completion</string>
+    <string name="finish_button_text">start to use</string>
+    <string name="check_for_updates">Check for updates</string>
+    <string name="check">Check for updates</string>
+    <string name="update">Update</string>
+    <string name="latest_version">  already the latest version</string>
+    <string name="down_success">update success</string>
+    <string name="down_failed">update failed</string>
+</resources>

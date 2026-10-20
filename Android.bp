@@ -1,0 +1,25 @@
+
+android_app {
+    name: "FdeAiAgent",
+    srcs: ["**/*.kt","**/*.java"],
+	resource_dirs: ["res"],
+    platform_apis: true,
+    system_ext_specific: true,
+    certificate: "platform",
+    privileged: true,
+    optimize: {
+       enabled: false,
+    },
+	static_libs: [
+	    "androidx.appcompat_appcompat",
+        "com.google.android.material_material",
+        "androidx.legacy_legacy-support-v13",
+		"androidx.cardview_cardview",
+		"androidx-constraintlayout_constraintlayout",
+        "down_static_libs",
+		"kotlinx-coroutines-android",
+        "kotlinx-coroutines-core",
+		"kotlin-stdlib",     ],
+	manifest: "AndroidManifest.xml",
+}
+

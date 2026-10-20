@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="purple_200">#FFBB86FC</color>
+    <color name="purple_500">#FF6200EE</color>
+    <color name="purple_700">#FF3700B3</color>
+    <color name="teal_200">#FF03DAC5</color>
+    <color name="teal_700">#FF018786</color>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+
+    <color name="title_color">@android:color/white</color>
+    <color name="picker_divider">#96c140</color>
+    <color name="title_bg">#64891f</color>
+    <color name="all_bg">#f5f5f5</color>
+    <color name="legal_webview_bg">#dcdcdc</color>
+    <color name="legal_checkbox_text">#2d2d2d</color>
+    <color name="link_text_color">#ff009688</color>
+
+    <color name="next_button_color">#409EFF</color>
+    <color name="next_button_disable_color">#B3409EFF</color>
+    <color name="next_button_pressed_color">#3A8EE6</color>
+    <color name="next_button_hovered_color">#66B1FF</color>
+    <color name="show_text_color">#ff333333</color>
+
+    <color name="prev_button_color">#909399</color>
+    <color name="prev_button_disable_color">#B3909399</color>
+    <color name="prev_button_pressed_color">#82848A</color>
+    <color name="prev_button_hovered_color">#A6A9AD</color>
+
+    <color name="done_button_color">#67C23A</color>
+    <color name="done_button_disable_color">#B367C23A</color>
+    <color name="done_button_pressed_color">#5DAF34</color>
+    <color name="done_button_hovered_color">#85CE61</color>
+
+    <color name="panel_title_color">#ff333333</color>
+    <color name="panel_background_color">#FFEDEDED</color>
+    <color name="list_color">#333333</color>
+    <color name="list_summary_color">#333333</color>
+
+    <color name="colorAccent">#ffe7333f</color>
+    <color name="download_button_color">#59409EFF</color>
+    <color name="update_bg">#ebf5ff</color>
+    <color name="install_bg">#0080ff</color>
+    <color name="install_bg_un">#87CEFA</color>
+</resources>

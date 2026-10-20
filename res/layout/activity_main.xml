@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:scrollbars="vertical"
+    android:scrollbarStyle="insideOverlay"
+    android:fadeScrollbars="false"
+    android:fillViewport="true">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/main"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+
+    
+
+    <!-- ================= DeepSeek + AppFunctions demo ================= -->
+
+    <EditText
+        android:id="@+id/editDeepSeekKey"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginTop="24dp"
+        android:hint="DeepSeek API Key (sk-...)"
+        android:inputType="textPassword"
+        android:textSize="14sp" />
+
+    <EditText
+        android:id="@+id/editImagePath"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
+        android:hint="/mnt/sdcard/Pictures/aa.png"
+        android:inputType="text"
+        android:textSize="14sp"
+        app:layout_constraintTop_toBottomOf="@id/editDeepSeekKey" />
+
+    <EditText
+        android:id="@+id/editAgentPrompt"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
+        android:hint="对智能体说点什么，例如：帮我打开这张图片"
+        android:inputType="text"
+        android:textSize="14sp"
+        app:layout_constraintTop_toBottomOf="@id/editImagePath" />
+
+    <Button
+        android:id="@+id/btnRunAgent"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:text="运行智能体"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/editAgentPrompt" />
+
+    <Button
+        android:id="@+id/btnOpenGallery"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:text="打开相册"
+        app:layout_constraintStart_toEndOf="@id/btnRunAgent"
+        app:layout_constraintTop_toBottomOf="@id/editAgentPrompt" />
+
+    <Button
+        android:id="@+id/btnGrantFunctionPermission"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:text="权限说明"
+        android:visibility="visible"
+        app:layout_constraintStart_toEndOf="@id/btnOpenGallery"
+        app:layout_constraintTop_toBottomOf="@id/editAgentPrompt" />
+
+    <TextView
+        android:id="@+id/tvAgentLog"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="16dp"
+        android:background="#11000000"
+        android:fontFamily="monospace"
+        android:padding="8dp"
+        android:text="等待运行…"
+        android:textSize="12sp"
+        app:layout_constraintTop_toBottomOf="@id/btnRunAgent" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+</ScrollView>
