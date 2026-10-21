@@ -3,7 +3,7 @@ package com.fde.aiagent.execution
 /**
  * 统一的执行事件模型。
  *
- * 整条 Agent 流水线（DeepSeek 规划 → SkillEngine 执行 → AppFunction 分发）的所有状态变化，
+ * 整条 Agent 流水线（所选 AI 供应商规划 → SkillEngine 执行 → AppFunction 分发）的所有状态变化，
  * 都通过 [AgentEvent] 对外广播：SVG 状态面板、运行日志、错误提示条都只依赖这一套事件，
  * 从而保证 UI 与执行状态始终一致。
  */

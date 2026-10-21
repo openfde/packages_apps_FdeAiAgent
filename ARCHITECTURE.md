@@ -1,13 +1,14 @@
 # FDE AI Agent — 架构说明
 
-面向桌面的 Android 智能体：**DeepSeek 规划 → Skill Engine 编排 → AppFunctions / 内置能力执行，
+面向桌面的 Android 智能体：**所选 AI 供应商（DeepSeek / 通义千问 / 智谱 GLM / Kimi / Gemini /
+自定义 OpenAI 兼容）规划 → Skill Engine 编排 → AppFunctions / 内置能力执行，
 全程由统一的执行事件驱动 SVG 状态面板**。
 
 ## 1. 五层职责
 
 | 层 | 主要类 | 职责 |
 | --- | --- | --- |
-| 意图/规划 | `ai/DeepSeekClient.kt` | 理解用户意图；从 Skill 目录中选择 Skill 并填写入参（`run_skill` 工具），或直接回答 |
+| 意图/规划 | `ai/AiProvider.kt`、`ai/AiClient.kt` | 多供应商 LLM 客户端（OpenAI 兼容 + Gemini）；理解用户意图；从 Skill 目录中选择 Skill 并填写入参（`run_skill` 工具），或直接回答 |
 | Skill | `skill/SkillRegistry.kt`、`skill/SkillEngine.kt` | 装载 `assets/skills/**/SKILL.md`；把多个工具编排成可复用的多步骤流程 |
 | AppFunctions | `appfunctions/AppFunctionCatalog.kt`、`appfunctions/AppFunctionDispatcher.kt` | 登记/分发 Android 应用暴露的真实能力（当前为相册 openImage / playVideo） |
 | 权限与执行 | `execution/PermissionGuard.kt`、`execution/AgentCoordinator.kt` | 统一安全把关 + 流水线总协调 |
@@ -26,8 +27,10 @@ app/src/main/
 │   ├── file_search/SKILL.md      # 目录内按规则搜索文件（内置工具）
 │   └── task_create/SKILL.md      # 写入任务文件并回读校验（演示权限守卫 + 引用链）
 └── java/com/fde/aiagent/
-    ├── MainActivity.kt              # 纯 UI：喂配置、订阅事件、驱动 SVG/日志/错误提示
-    ├── ai/DeepSeekClient.kt         # LLM 客户端 + 规划（不直接执行任何工具）
+    ├── MainActivity.kt              # 纯 UI：选择供应商/填 key、订阅事件、驱动 SVG/日志/错误提示
+    ├── ai/
+    │   ├── AiProvider.kt            # 供应商预设（DeepSeek/千问/智谱/Kimi/Gemini/自定义）+ AiConfig
+    │   └── AiClient.kt              # LLM 客户端 + 规划（OpenAI 兼容 + Gemini 协议，不直接执行任何工具）
     ├── skill/
     │   ├── Skill.kt                 # Skill / SkillStep 模型
     │   ├── SkillFrontMatter.kt      # 最小 YAML front-matter 解析器
@@ -48,13 +51,32 @@ app/src/main/
     └── ui/SvgStateRenderer.kt       # AgentEvent -> SVG 字符串
 ```
 
+### 2.1 AI 供应商
+
+左上角「AI 供应商」下拉框选择，API Key / 模型均可手动输入并持久化（SharedPreferences），默认模型：
+
+| 供应商 | 协议 | 默认模型 |
+| --- | --- | --- |
+| DeepSeek（深度求索） | OpenAI 兼容 `chat/completions` | `deepseek-chat` |
+| 通义千问（Qwen） | OpenAI 兼容 `chat/completions`（DashScope 兼容模式） | `qwen-plus` |
+| 智谱 AI（GLM） | OpenAI 兼容 `chat/completions` | `glm-4-plus` |
+| Kimi（月之暗面） | OpenAI 兼容 `chat/completions` | `moonshot-v1-8k` |
+| Google Gemini | `generateContent`（functionDeclarations / functionCall） | `gemini-2.5-flash` |
+| 自定义 OpenAI 兼容 | `chat/completions`（需填 Base URL） | `gpt-4o` |
+
+新增一家 OpenAI 兼容的供应商只需在 `AiProvider.kt` 枚举里加一项；非兼容协议（如 Gemini）
+需在 `AiClient.kt` 中增加对应的请求 / 解析分支（已内置 Gemini，可直接参照扩展）。
+
 ## 3. 一次「打开图片」的执行时序
 
 ```
 MainActivity.btnRunAgent
-  └─ AgentCoordinator.runAgent(apiKey, prompt)
+  └─ AgentCoordinator.runAgent(cfg, prompt)
        ├─ publish(FlowStarted)
-       ├─ publish(PLAN 节点) → DeepSeekClient.plan(prompt, skills)
+       ├─ publish(PLAN 节点) → AiClient.plan(prompt, skills)
+       │    按选中的供应商切换协议:
+       │      OpenAI 兼容（DeepSeek/千问/智谱/Kimi）→ chat/completions + tools
+       │      Gemini → generateContent + functionDeclarations
        │    模型决策:
        │      ─ run_skill(skill=app_inspect, inputs={path,title,video,...})
        │      ─ 或直接回答（闲聊/无匹配）
@@ -81,7 +103,7 @@ UI 侧（`MainActivity` 作为 `ExecutionListener`）在同一 `onEvent` 回调�
 ```markdown
 ---
 name: app_inspect
-description: ...            # 给 DeepSeek 的描述
+description: ...            # 给所选 AI 模型的描述
 inputs:
   path: 图片绝对路径         # 声明参数（name -> 说明）
 input_required:

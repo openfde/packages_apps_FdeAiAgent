@@ -3,7 +3,7 @@ package com.fde.aiagent.skill
 /**
  * 一个可复用的多步骤 Skill，由 `assets/skills/<id>/SKILL.md` 解析而来。
  *
- * 元数据存于 YAML front-matter，正文为 Markdown 说明（可注入给 DeepSeek 作为上下文）。
+ * 元数据存于 YAML front-matter，正文为 Markdown 说明（可注入给所选 AI 模型作为上下文）。
  */
 data class Skill(
     val id: String,
@@ -29,7 +29,7 @@ data class Skill(
         const val TYPE_REPORT = "report"
     }
 
-    /** 供 DeepSeek 规划用的输入说明（含必填标记）。 */
+    /** 供所选 AI 模型规划用的输入说明（含必填标记）。 */
     fun inputSpec(): String {
         val parts = inputs.map { (name, desc) ->
             if (name in requiredInputs) "$name(必填): $desc" else "$name: $desc"

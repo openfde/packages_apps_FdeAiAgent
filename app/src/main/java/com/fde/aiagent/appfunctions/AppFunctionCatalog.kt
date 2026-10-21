@@ -4,7 +4,7 @@ package com.fde.aiagent.appfunctions
  * AppFunction 目录 —— 集中登记本智能体可以调用的所有 AppFunction。
  *
  * 目前只有相册 `com.fde.gallery3d` 对外暴露的媒体能力（openImage / playVideo）。
- * 新增能力时只需在这里加一条 [AppFunction]，Skill / DeepSeek / 分发器无需改动。
+ * 新增能力时只需在这里加一条 [AppFunction]，Skill / AI 客户端 / 分发器无需改动。
  */
 object AppFunctionCatalog {
 

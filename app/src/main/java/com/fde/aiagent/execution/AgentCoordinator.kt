@@ -1,7 +1,8 @@
 package com.fde.aiagent.execution
 
 import android.content.Context
-import com.fde.aiagent.ai.DeepSeekClient
+import com.fde.aiagent.ai.AiClient
+import com.fde.aiagent.ai.AiConfig
 import com.fde.aiagent.ai.SkillBrief
 import com.fde.aiagent.ai.ModelPlan
 import com.fde.aiagent.appfunctions.AppFunctionCatalog
@@ -19,7 +20,7 @@ import kotlinx.coroutines.launch
 /**
  * 总协调器 —— 把各层串成一条流水线：
  *
- *  `DeepSeekClient（理解意图/规划）`
+ *  `AiClient（理解意图/规划，支持 DeepSeek/千问/智谱/Kimi/Gemini 等供应商）`
  *      -> 决定执行某个 Skill（ModelPlan.RunSkill）或直接回答
  *  `SkillEngine（多步流程执行）`
  *      -> 每步经 PermissionGuard 检查后由 AppFunctionDispatcher / SkillBuiltins 执行
@@ -45,9 +46,9 @@ class AgentCoordinator(context: Context) {
 
     private fun emit(event: AgentEvent) = bus.publish(event)
 
-    // ---------------- 完整智能体执行（含 DeepSeek 规划） ----------------
+    // ---------------- 完整智能体执行（含 AI 规划） ----------------
 
-    fun runAgent(apiKey: String, prompt: String) {
+    fun runAgent(cfg: AiConfig, prompt: String) {
         val p = prompt.trim()
         if (p.isEmpty()) {
             emit(AgentEvent.Logged("请输入要执行的指令。"))
@@ -59,7 +60,7 @@ class AgentCoordinator(context: Context) {
         }
 
         scope.launch {
-            var client: DeepSeekClient? = null
+            var client: AiClient? = null
             try {
                 emit(AgentEvent.FlowStarted)
                 emit(AgentEvent.Logged("===== 运行智能体 ====="))
@@ -67,7 +68,7 @@ class AgentCoordinator(context: Context) {
                 val skills = registry.all()
                 emit(AgentEvent.Logged("→ 已注册 Skills: " + skills.joinToString { it.id }))
 
-                // 1) DeepSeek：理解意图 & 规划
+                // 1) 所选 AI 供应商：理解意图 & 规划
                 val planNode = FlowNode(
                     id = "plan",
                     label = "规划任务（理解用户意图）",
@@ -75,7 +76,7 @@ class AgentCoordinator(context: Context) {
                 )
                 emit(AgentEvent.NodeStarted(planNode.asRunning()))
 
-                val cli = DeepSeekClient(apiKey) { line -> emit(AgentEvent.Logged(line)) }
+                val cli = AiClient(cfg) { line -> emit(AgentEvent.Logged(line)) }
                 client = cli
                 val plan = cli.plan(
                     p,

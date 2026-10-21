@@ -7,11 +7,16 @@ import android.os.Bundle
 import android.view.View
 import android.webkit.WebSettings
 import android.webkit.WebView
+import android.widget.AdapterView
+import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.EditText
 import android.widget.ScrollView
+import android.widget.Spinner
 import android.widget.TextView
 import android.widget.Toast
+import com.fde.aiagent.ai.AiConfig
+import com.fde.aiagent.ai.AiProvider
 import com.fde.aiagent.execution.AgentCoordinator
 import com.fde.aiagent.execution.AgentEvent
 import com.fde.aiagent.execution.ExecutionListener
@@ -20,7 +25,8 @@ import com.fde.aiagent.ui.SvgStateRenderer
 /**
  * FDE AI Agent —— 五层架构的界面入口。
  *
- *  - DeepSeek（[com.fde.aiagent.ai.DeepSeekClient]）：理解意图 + 规划任务；
+ *  - 所选 AI 供应商（[com.fde.aiagent.ai.AiClient]，支持 DeepSeek/千问/智谱/Kimi/Gemini/自定义）：
+ *    理解意图 + 规划任务；
  *  - Skill（[com.fde.aiagent.skill.SkillRegistry] / [com.fde.aiagent.skill.SkillEngine]）：
  *    可复用的多步骤流程（assets/skills/&lt;id&gt;/SKILL.md）；
  *  - AppFunctions（[com.fde.aiagent.appfunctions.AppFunctionCatalog] /
@@ -37,7 +43,11 @@ class MainActivity : Activity(), ExecutionListener {
 
     private val renderer = SvgStateRenderer()
 
-    private lateinit var editKey: EditText
+    private lateinit var spProvider: Spinner
+    private lateinit var editApiKey: EditText
+    private lateinit var editModel: EditText
+    private lateinit var editBaseUrl: EditText
+    private lateinit var lblBaseUrl: TextView
     private lateinit var editImagePath: EditText
     private lateinit var editVideoPath: EditText
     private lateinit var editPrompt: EditText
@@ -45,6 +55,7 @@ class MainActivity : Activity(), ExecutionListener {
     private lateinit var svLog: ScrollView
     private lateinit var tvError: TextView
     private lateinit var tvStatus: TextView
+    private lateinit var tvModelInfo: TextView
     private lateinit var svgView: WebView
     private lateinit var prefs: SharedPreferences
     private lateinit var coordinator: AgentCoordinator
@@ -52,7 +63,10 @@ class MainActivity : Activity(), ExecutionListener {
     companion object {
         private const val TAG = "FdeAiAgent"
         private const val PREFS = "fde_ai_agent"
+        private const val KEY_PROVIDER = "provider"
         private const val KEY_API = "api_key"
+        private const val KEY_MODEL = "model"
+        private const val KEY_BASE_URL = "base_url"
         private const val KEY_IMAGE_PATH = "image_path"
         private const val KEY_VIDEO_PATH = "video_path"
         private const val KEY_PROMPT = "prompt"
@@ -66,7 +80,11 @@ class MainActivity : Activity(), ExecutionListener {
 
         actionBar?.hide()
         prefs = getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-        editKey = findViewById(R.id.editDeepSeekKey)
+        spProvider = findViewById(R.id.spProvider)
+        editApiKey = findViewById(R.id.editApiKey)
+        editModel = findViewById(R.id.editModel)
+        editBaseUrl = findViewById(R.id.editBaseUrl)
+        lblBaseUrl = findViewById(R.id.lblBaseUrl)
         editImagePath = findViewById(R.id.editImagePath)
         editVideoPath = findViewById(R.id.editVideoPath)
         editPrompt = findViewById(R.id.editAgentPrompt)
@@ -74,13 +92,38 @@ class MainActivity : Activity(), ExecutionListener {
         svLog = findViewById(R.id.svLog)
         tvError = findViewById(R.id.tvError)
         tvStatus = findViewById(R.id.tvStatus)
+        tvModelInfo = findViewById(R.id.tvModelInfo)
         svgView = findViewById(R.id.svgStateView)
 
+        // AI 供应商选择：几套预设 + 自定义
+        val providers = AiProvider.entries
+        spProvider.adapter = ArrayAdapter(
+            this,
+            android.R.layout.simple_spinner_item,
+            providers.map { it.label },
+        ).apply { setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item) }
+
         // 恢复上次保存的配置
-       // editKey.setText(prefs.getString(KEY_API, ""))
+        val savedProvider = prefs.getString(KEY_PROVIDER, AiProvider.DEEPSEEK.id)!!
+        val providerIndex = AiProvider.indexOf(savedProvider).coerceAtLeast(0)
+        spProvider.setSelection(providerIndex)
+        editApiKey.setText(prefs.getString(KEY_API, ""))
+        editModel.setText(prefs.getString(KEY_MODEL, ""))
+        editBaseUrl.setText(prefs.getString(KEY_BASE_URL, ""))
         editImagePath.setText(prefs.getString(KEY_IMAGE_PATH, DEFAULT_IMAGE_PATH))
         editVideoPath.setText(prefs.getString(KEY_VIDEO_PATH, ""))
         editPrompt.setText(prefs.getString(KEY_PROMPT, "打开 /mnt/sdcard/Pictures/aa.png 这张图片预览"))
+
+        spProvider.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                saveSettings()
+                onProviderChanged()
+            }
+
+            override fun onNothingSelected(parent: AdapterView<*>?) {
+                onProviderChanged()
+            }
+        }
 
         setupWebView()
 
@@ -105,6 +148,8 @@ class MainActivity : Activity(), ExecutionListener {
             setStatus("就绪", R.color.pc_text_secondary)
             renderSvg()
         }
+
+        onProviderChanged() // 初次渲染（自定义时才显示 Base URL 字段）
     }
 
     override fun onDestroy() {
@@ -112,22 +157,50 @@ class MainActivity : Activity(), ExecutionListener {
         coordinator.removeListener(this)
     }
 
+    /** 切换供应商时：Base URL 仅在选择“自定义”时显示；同步右上角 model 信息。 */
+    private fun onProviderChanged() {
+        val provider = AiProvider.fromId(selectedProviderId()) ?: AiProvider.DEEPSEEK
+        val isCustom = provider == AiProvider.CUSTOM
+        val baseVisibility = if (isCustom) View.VISIBLE else View.GONE
+        lblBaseUrl.visibility = baseVisibility
+        editBaseUrl.visibility = baseVisibility
+
+        // 未手动填模型时，提示栏展示当前生效模型
+        val effectiveModel = editModel.text.toString().trim()
+            .ifEmpty { provider.defaultModel }
+        tvModelInfo.text = "${provider.id} · model: $effectiveModel"
+    }
+
+    private fun selectedProviderId(): String =
+        AiProvider.entries.getOrNull(spProvider.selectedItemPosition)?.id ?: AiProvider.DEEPSEEK.id
+
+    private fun collectConfig(): AiConfig = AiConfig(
+        providerId = selectedProviderId(),
+        apiKey = editApiKey.text.toString().trim(),
+        baseUrl = editBaseUrl.text.toString().trim(),
+        model = editModel.text.toString().trim(),
+    )
+
     // ---------------- 智能体 ----------------
 
     private fun runAgent() {
-        val key = editKey.text.toString().trim()
+        val cfg = collectConfig()
         val prompt = editPrompt.text.toString().trim()
         saveSettings()
 
-        if (key.isEmpty()) {
-            toast("请先填写并保存 DeepSeek API Key")
+        if (cfg.apiKey.isEmpty()) {
+            toast("请先选择 AI 供应商并填写 API Key")
+            return
+        }
+        if (cfg.provider() == AiProvider.CUSTOM && cfg.resolvedBaseUrl().isEmpty()) {
+            toast("请填写自定义 Base URL")
             return
         }
         if (prompt.isEmpty()) {
             toast("请输入智能体指令")
             return
         }
-        coordinator.runAgent(key, prompt)
+        coordinator.runAgent(cfg, prompt)
     }
 
     // ---------------- 执行事件订阅（统一入口） ----------------
@@ -220,7 +293,10 @@ class MainActivity : Activity(), ExecutionListener {
 
     private fun saveSettings() {
         prefs.edit()
-            .putString(KEY_API, editKey.text.toString().trim())
+            .putString(KEY_PROVIDER, selectedProviderId())
+            .putString(KEY_API, editApiKey.text.toString().trim())
+            .putString(KEY_MODEL, editModel.text.toString().trim())
+            .putString(KEY_BASE_URL, editBaseUrl.text.toString().trim())
             .putString(KEY_IMAGE_PATH, editImagePath.text.toString().trim())
             .putString(KEY_VIDEO_PATH, editVideoPath.text.toString().trim())
             .putString(KEY_PROMPT, editPrompt.text.toString().trim())

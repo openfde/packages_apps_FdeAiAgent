@@ -43,7 +43,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="12dp"
-            android:text="DeepSeek × Skill × AppFunctions"
+            android:text="AI × Skill × AppFunctions"
             android:textColor="@color/pc_text_secondary"
             android:textSize="12sp" />
 
@@ -103,22 +103,86 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="DeepSeek API Key"
+                android:text="AI 供应商（Provider）"
                 android:textAppearance="@style/TextAppearance.PcLabel" />
 
-            <EditText
-                android:id="@+id/editDeepSeekKey"
+            <Spinner
+                android:id="@+id/spProvider"
                 android:layout_width="match_parent"
                 android:layout_height="40dp"
                 android:layout_marginTop="6dp"
                 android:background="@drawable/bg_input"
-                android:hint="sk-..."
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp"
+                android:spinnerMode="dropdown" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:text="API Key（在各平台申请）"
+                android:textAppearance="@style/TextAppearance.PcLabel" />
+
+            <EditText
+                android:id="@+id/editApiKey"
+                android:layout_width="match_parent"
+                android:layout_height="40dp"
+                android:layout_marginTop="6dp"
+                android:background="@drawable/bg_input"
+                android:hint="sk-... 或 key-..."
+                android:importantForAutofill="no"
                 android:inputType="textPassword"
                 android:paddingStart="12dp"
                 android:paddingEnd="12dp"
                 android:singleLine="true"
                 android:textColor="@color/pc_text_primary"
                 android:textSize="13sp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="14dp"
+                android:text="模型（Model，留空用默认）"
+                android:textAppearance="@style/TextAppearance.PcLabel" />
+
+            <EditText
+                android:id="@+id/editModel"
+                android:layout_width="match_parent"
+                android:layout_height="40dp"
+                android:layout_marginTop="6dp"
+                android:background="@drawable/bg_input"
+                android:hint="deepseek-chat / qwen-plus / glm-4-plus / gemini-2.5-flash ..."
+                android:inputType="text"
+                android:paddingStart="12dp"
+                android:paddingEnd="12dp"
+                android:singleLine="true"
+                android:textColor="@color/pc_text_primary"
+                android:textSize="13sp" />
+
+            <TextView
+                android:id="@+id/lblBaseUrl"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="14dp"
+                android:text="Base URL（选择“自定义”时必填）"
+                android:textAppearance="@style/TextAppearance.PcLabel"
+                android:visibility="gone" />
+
+            <EditText
+                android:id="@+id/editBaseUrl"
+                android:layout_width="match_parent"
+                android:layout_height="40dp"
+                android:layout_marginTop="6dp"
+                android:background="@drawable/bg_input"
+                android:hint="https://example.com/v1/chat/completions"
+                android:importantForAutofill="no"
+                android:inputType="textUri"
+                android:paddingStart="12dp"
+                android:paddingEnd="12dp"
+                android:singleLine="true"
+                android:textColor="@color/pc_text_primary"
+                android:textSize="13sp"
+                android:visibility="gone" />
 
             <TextView
                 android:layout_width="wrap_content"
@@ -363,10 +427,11 @@
                     android:layout_weight="1" />
 
                 <TextView
+                    android:id="@+id/tvModelInfo"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:fontFamily="monospace"
-                    android:text="model: deepseek-chat"
+                    android:text="model: -"
                     android:textColor="@color/pc_text_secondary"
                     android:textSize="11sp" />
             </LinearLayout>
