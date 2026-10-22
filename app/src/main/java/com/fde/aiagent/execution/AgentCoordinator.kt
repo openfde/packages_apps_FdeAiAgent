@@ -126,6 +126,17 @@ class AgentCoordinator(context: Context) {
     fun playVideo(path: String, title: String) =
         directFunction(AppFunctionCatalog.FUNC_PLAY_VIDEO, mapOf("path" to path, "title" to title))
 
+    /** 图片滤镜编辑：跨应用调用相册 editImage（path 必填，filter/outputPath 可选）。 */
+    fun editImage(path: String, filter: String? = null, outputPath: String? = null) =
+        directFunction(
+            AppFunctionCatalog.FUNC_EDIT_IMAGE,
+            buildMap {
+                put("path", path)
+                filter?.takeIf { it.isNotBlank() }?.let { put("filter", it) }
+                outputPath?.takeIf { it.isNotBlank() }?.let { put("outputPath", it) }
+            },
+        )
+
     /** 「打开设置页」按钮：跨应用调用 Settings 的 openSettingsPage。 */
     fun openSettingsPage(page: String) =
         directFunction(AppFunctionCatalog.FUNC_OPEN_SETTINGS_PAGE, mapOf("page" to page))

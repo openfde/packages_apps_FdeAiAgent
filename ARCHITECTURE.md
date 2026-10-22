@@ -10,7 +10,7 @@
 | --- | --- | --- |
 | 意图/规划 | `ai/AiProvider.kt`、`ai/AiClient.kt` | 多供应商 LLM 客户端（OpenAI 兼容 + Gemini）；理解用户意图；从 Skill 目录中选择 Skill 并填写入参（`run_skill` 工具），或直接回答 |
 | Skill | `skill/SkillRegistry.kt`、`skill/SkillEngine.kt` | 装载 `assets/skills/**/SKILL.md`；把多个工具编排成可复用的多步骤流程 |
-| AppFunctions | `appfunctions/AppFunctionCatalog.kt`、`appfunctions/AppFunctionDispatcher.kt` | 登记/分发 Android 应用暴露的真实能力（相册 openImage / playVideo、系统设置 openSettingsPage / adjustBrightness） |
+| AppFunctions | `appfunctions/AppFunctionCatalog.kt`、`appfunctions/AppFunctionDispatcher.kt` | 登记/分发 Android 应用暴露的真实能力（相册 openImage / playVideo / editImage、系统设置 openSettingsPage / adjustBrightness） |
 | 权限与执行 | `execution/PermissionGuard.kt`、`execution/AgentCoordinator.kt` | 统一安全把关 + 流水线总协调 |
 | SVG 状态面板 | `ui/SvgStateRenderer.kt` | 用统一执行事件渲染流程节点、日志尾部与错误提示（WebView 展示） |
 
@@ -23,7 +23,7 @@ SVG 面板、运行日志、错误提示条都只订阅这一套事件。
 ```
 app/src/main/
 ├── assets/skills/
-│   ├── app_inspect/SKILL.md      # 检查 AppFunctions 环境并打开图片/播放视频（含权限检查）
+│   ├── gallery/SKILL.md         # 相册媒体操作：打开图片/播放视频/图片滤镜编辑（openImage/playVideo/editImage，含权限检查）
 │   ├── file_search/SKILL.md      # 目录内按规则搜索文件（内置工具）
 │   ├── settings/SKILL.md        # 系统设置控制：打开设置页 wifi/display/sound/apps/storage（openSettingsPage）+ 调节屏幕亮度（adjustBrightness）
 │   └── task_create/SKILL.md      # 写入任务文件并回读校验（演示权限守卫 + 引用链）
@@ -95,6 +95,25 @@ FdeAiAgent 侧只需做消费方接入：
 - 结果文档按 `ok` / `status` / `error` 解析：`ok=false, error="unsupported_page"` /
   `error="invalid_action"` 等会被 `AppFunctionDispatcher` 识别为失败并反馈给用户。
 
+### 2.3 相册媒体操作（gallery：openImage / playVideo / editImage）
+
+相册应用 `com.fde.gallery3d` 通过 `MediaAppFunctionsService`
+（`assets/appfunctions.xml` 声明，见 FdeGallery 源码）对外开放三个 AppFunction：
+
+- `openImage`：打开图片预览，参数 `path`（必填）+ `title`（可选）；
+- `playVideo`：播放视频，参数 `path`（必填）+ `title`（可选）；
+- `editImage`：给图片添加滤镜并另存，参数 `path`（必填）+ `filter`（可选，缺省
+  `black_white` 黑白，`origin` 表示不处理仅另存副本）+ `outputPath`（可选，缺省写入
+  Pictures/fde 目录并返回实际路径）。处理逻辑参考 FdeGallery 的 `FilterListFragment`
+  （采样加载 → 复制 ARGB_8888 → `PhotoProcessing.filterPhoto` → PNG 写回 + 相册扫描）。
+
+FdeAiAgent 侧消费方接入：
+
+- `AppFunctionCatalog` 增加 `OPEN_IMAGE` / `PLAY_VIDEO` / `EDIT_IMAGE` 目录项；
+- 合并为单个 Skill `gallery`（`assets/skills/gallery/SKILL.md`），使 AI 能规划
+  「打开这张图片」「播放这个视频」「给这张图加黑白滤镜另存」这类指令；
+- 结果文档统一解析：`editImage` 成功时带 `outputPath`，分发器会把它拼进成功文案返回。
+
 ## 3. 一次「打开图片」的执行时序
 
 ```
@@ -106,13 +125,16 @@ MainActivity.btnRunAgent
        │      OpenAI 兼容（DeepSeek/千问/智谱/Kimi）→ chat/completions + tools
        │      Gemini → generateContent + functionDeclarations
        │    模型决策:
-       │      ─ run_skill(skill=app_inspect, inputs={path,title,video,...})
+       │      ─ run_skill(skill=gallery, inputs={path,title,video,filter,...})
        │      ─ 或直接回答（闲聊/无匹配）
-       ├─ SkillEngine.execute(app_inspect, inputs, bus)
+       ├─ SkillEngine.execute(gallery, inputs, bus)
        │    1. check_platform   -> PermissionGuard.checkAppFunctionExecution()
-       │    2. open_image       -> AppFunctionDispatcher.dispatch(openImage,{path,title})
-       │    3. play_video       -> run_when('$input.video != ""') 不满足则 SKIPPED
-       │    4. report           -> 汇总前三步输出
+       │    2. open_image       -> run_when('$input.filter == ""') 满足则
+       │                            AppFunctionDispatcher.dispatch(openImage,{path,title})
+       │    3. edit_image       -> run_when('$input.filter != ""') 满足则
+       │                            dispatch(editImage,{path,filter,outputPath})
+       │    4. play_video       -> run_when('$input.video != ""') 不满足则 SKIPPED
+       │    5. report           -> 汇总前几步输出
        │    每一步都 publish(NodeStarted/NodeFinished/NodeFailed/NodeSkipped/Logged)
        └─ publish(FlowFinished / FlowFailed)
 ```
@@ -130,7 +152,7 @@ UI 侧（`MainActivity` 作为 `ExecutionListener`）在同一 `onEvent` 回调�
 
 ```markdown
 ---
-name: app_inspect
+name: gallery
 description: ...            # 给所选 AI 模型的描述
 inputs:
   path: 图片绝对路径         # 声明参数（name -> 说明）

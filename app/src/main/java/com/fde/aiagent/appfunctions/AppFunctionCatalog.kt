@@ -4,7 +4,7 @@ package com.fde.aiagent.appfunctions
  * AppFunction 目录 —— 集中登记本智能体可以调用的所有 AppFunction。
  *
  * 目前有两类能力：
- *  - 相册 `com.fde.gallery3d` 对外暴露的媒体能力（openImage / playVideo）；
+ *  - 相册 `com.fde.gallery3d` 对外暴露的媒体能力（openImage / playVideo / editImage）；
  *  - 系统设置 `com.android.settings` 对外开放的「设置控制」能力：openSettingsPage
  *    （打开设置页）与 adjustBrightness（调节屏幕亮度）。
  *
@@ -21,6 +21,7 @@ object AppFunctionCatalog {
 
     const val FUNC_OPEN_IMAGE = "openImage"
     const val FUNC_PLAY_VIDEO = "playVideo"
+    const val FUNC_EDIT_IMAGE = "editImage"
     const val FUNC_OPEN_SETTINGS_PAGE = "openSettingsPage"
     const val FUNC_ADJUST_BRIGHTNESS = "adjustBrightness"
 
@@ -60,6 +61,30 @@ object AppFunctionCatalog {
             }
         """.trimIndent(),
         requiredParams = listOf("path", "title"),
+    )
+
+    /**
+     * 给指定图片添加滤镜并另存（path 必填；filter 可选、缺省 black_white 黑白、origin 表示
+     * 不处理仅另存副本；outputPath 可选、缺省写入 Pictures/fde 目录）。功能定义见 FdeGallery
+     * 的 assets/appfunctions.xml 与 MediaAppFunctionsService.editImage。
+     */
+    val EDIT_IMAGE = AppFunction(
+        id = FUNC_EDIT_IMAGE,
+        packageName = GALLERY_PACKAGE,
+        serviceName = GALLERY_SERVICE,
+        description = "给指定图片添加滤镜并保存（filter 可选，如 black_white 黑白；outputPath 可指定输出路径）",
+        schemaJson = """
+            {
+              "type": "object",
+              "properties": {
+                "path": { "type": "string", "description": "源图片的绝对路径，例如 /sdcard/Download/bella.jpg" },
+                "filter": { "type": "string", "description": "滤镜名称：black_white / bw（黑白）、sepia（怀旧）、retro（复古）、classic（经典）、soft（软化）、shine（发光）、mosaic（马赛克）、origin（仅另存副本）等，缺省 black_white" },
+                "outputPath": { "type": "string", "description": "输出文件路径（PNG），缺省写入 Pictures/fde 目录" }
+              },
+              "required": ["path"]
+            }
+        """.trimIndent(),
+        requiredParams = listOf("path"),
     )
 
     /** 打开指定的系统设置页面（参数 page，取值与 Settings 的 OpenSettingsPageAppFunctionService 一致）。 */
@@ -104,7 +129,9 @@ object AppFunctionCatalog {
         requiredParams = listOf("action"),
     )
 
-    val ALL: List<AppFunction> = listOf(OPEN_IMAGE, PLAY_VIDEO, OPEN_SETTINGS_PAGE, ADJUST_BRIGHTNESS)
+    val ALL: List<AppFunction> = listOf(
+        OPEN_IMAGE, PLAY_VIDEO, EDIT_IMAGE, OPEN_SETTINGS_PAGE, ADJUST_BRIGHTNESS,
+    )
 
     private val byId: Map<String, AppFunction> = ALL.associateBy { it.id }
 

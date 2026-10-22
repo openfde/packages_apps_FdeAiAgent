@@ -75,6 +75,8 @@ class AppFunctionDispatcher(
             val doc = response.resultDocument
             val names = runCatching { doc.propertyNames }.getOrNull() ?: emptySet()
             val status = runCatching { doc.getPropertyString("status") }.getOrNull()
+            // 结果文档可能携带业务输出（如 editImage 的 outputPath），一并展示给用户。
+            val outputPath = runCatching { doc.getPropertyString("outputPath") }.getOrNull()
             // getPropertyBoolean 在属性缺失时返回 false，必须先判断属性是否存在。
             val hasOkProp = names.contains("ok")
             val ok = if (hasOkProp) runCatching { doc.getPropertyBoolean("ok") }.getOrNull() else null
@@ -90,7 +92,8 @@ class AppFunctionDispatcher(
 
             FunctionResult.Success(
                 displayText = "已调用 ${fn.packageName}#${fn.id}（${fn.serviceName}）" +
-                    (status?.let { "，返回 status=$it" } ?: "（返回文档无 status 字段）"),
+                    (status?.let { "，返回 status=$it" } ?: "（返回文档无 status 字段）") +
+                    (outputPath?.takeIf { it.isNotEmpty() }?.let { "，输出: $it" } ?: ""),
                 raw = status ?: "ok",
             )
         } catch (t: Throwable) {
