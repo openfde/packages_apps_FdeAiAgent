@@ -3,7 +3,10 @@ package com.fde.aiagent.appfunctions
 /**
  * AppFunction 目录 —— 集中登记本智能体可以调用的所有 AppFunction。
  *
- * 目前只有相册 `com.fde.gallery3d` 对外暴露的媒体能力（openImage / playVideo）。
+ * 目前有两类能力：
+ *  - 相册 `com.fde.gallery3d` 对外暴露的媒体能力（openImage / playVideo）；
+ *  - 系统设置 `com.android.settings` 对外开放的「打开设置页」能力（openSettingsPage）。
+ *
  * 新增能力时只需在这里加一条 [AppFunction]，Skill / AI 客户端 / 分发器无需改动。
  */
 object AppFunctionCatalog {
@@ -11,8 +14,13 @@ object AppFunctionCatalog {
     const val GALLERY_PACKAGE = "com.fde.gallery3d"
     const val GALLERY_SERVICE = "com.fde.gallery3d.appfunctions.MediaAppFunctionsService"
 
+    const val SETTINGS_PACKAGE = "com.android.settings"
+    const val SETTINGS_SERVICE =
+        "com.android.settings.appfunctions.OpenSettingsPageAppFunctionService"
+
     const val FUNC_OPEN_IMAGE = "openImage"
     const val FUNC_PLAY_VIDEO = "playVideo"
+    const val FUNC_OPEN_SETTINGS_PAGE = "openSettingsPage"
 
     /** 在相册中打开指定绝对路径的图片预览。 */
     val OPEN_IMAGE = AppFunction(
@@ -52,7 +60,25 @@ object AppFunctionCatalog {
         requiredParams = listOf("path", "title"),
     )
 
-    val ALL: List<AppFunction> = listOf(OPEN_IMAGE, PLAY_VIDEO)
+    /** 打开指定的系统设置页面（参数 page，取值与 Settings 的 OpenSettingsPageAppFunctionService 一致）。 */
+    val OPEN_SETTINGS_PAGE = AppFunction(
+        id = FUNC_OPEN_SETTINGS_PAGE,
+        packageName = SETTINGS_PACKAGE,
+        serviceName = SETTINGS_SERVICE,
+        description = "打开指定的系统设置页面（page 可选 wifi / display / sound / apps / storage）",
+        schemaJson = """
+            {
+              "type": "object",
+              "properties": {
+                "page": { "type": "string", "description": "要打开的系统设置页 key：wifi / display / sound / apps / storage" }
+              },
+              "required": ["page"]
+            }
+        """.trimIndent(),
+        requiredParams = listOf("page"),
+    )
+
+    val ALL: List<AppFunction> = listOf(OPEN_IMAGE, PLAY_VIDEO, OPEN_SETTINGS_PAGE)
 
     private val byId: Map<String, AppFunction> = ALL.associateBy { it.id }
 

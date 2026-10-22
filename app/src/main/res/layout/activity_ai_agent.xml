@@ -81,7 +81,7 @@
 
         <!-- ============ 左栏：智能体配置 ============ -->
         <LinearLayout
-            android:layout_width="300dp"
+            android:layout_width="400dp"
             android:layout_height="match_parent"
             android:background="@drawable/bg_panel"
             android:orientation="vertical"
@@ -257,7 +257,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
-                android:text="可用 Skill：app_inspect / file_search / task_create"
+                android:text="可用 Skill：app_inspect / file_search / task_create / open_settings_page"
                 android:textColor="@color/pc_text_secondary"
                 android:textSize="11sp" />
 
@@ -321,6 +321,36 @@
                     android:background="@drawable/bg_btn_secondary"
                     android:stateListAnimator="@null"
                     android:text="清空日志"
+                    android:textColor="@color/pc_text_regular"
+                    android:textSize="12sp" />
+            </LinearLayout>
+
+            <!-- 打开设置页：选择页面 key + 触发跨应用 AppFunction（com.android.settings.openSettingsPage） -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:orientation="horizontal">
+
+                <Spinner
+                    android:id="@+id/spSettingsPage"
+                    android:layout_width="0dp"
+                    android:layout_height="38dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/bg_input"
+                    android:paddingStart="8dp"
+                    android:paddingEnd="8dp"
+                    android:spinnerMode="dropdown" />
+
+                <Button
+                    android:id="@+id/btnOpenSettings"
+                    android:layout_width="0dp"
+                    android:layout_height="38dp"
+                    android:layout_marginStart="8dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/bg_btn_secondary"
+                    android:stateListAnimator="@null"
+                    android:text="打开设置页"
                     android:textColor="@color/pc_text_regular"
                     android:textSize="12sp" />
             </LinearLayout>

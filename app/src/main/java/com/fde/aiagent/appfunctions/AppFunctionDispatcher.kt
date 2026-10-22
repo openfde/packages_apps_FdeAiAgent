@@ -56,10 +56,26 @@ class AppFunctionDispatcher(
                 .build()
 
             val response = executePlatform(manager, request)
-            // 相册把结果文档包装为 MediaResult；成功时带 status="ok"。
-            val status = runCatching {
-                response.resultDocument.getPropertyString("status")
-            }.getOrNull()
+            // 不同应用的结果文档形态不同：
+            //  - 相册 MediaResult：成功带 status="ok"；
+            //  - 设置 SettingsPageResult：成功 ok=true、status="launch_requested"；
+            //    失败 ok=false、error="unsupported_page" 等。
+            // 这里统一解析，把设置侧的业务失败也归为 Failure 反馈给用户/模型。
+            val doc = response.resultDocument
+            val names = runCatching { doc.propertyNames }.getOrNull() ?: emptySet()
+            val status = runCatching { doc.getPropertyString("status") }.getOrNull()
+            // getPropertyBoolean 在属性缺失时返回 false，必须先判断属性是否存在。
+            val hasOkProp = names.contains("ok")
+            val ok = if (hasOkProp) runCatching { doc.getPropertyBoolean("ok") }.getOrNull() else null
+            val error = runCatching { doc.getPropertyString("error") }.getOrNull()
+
+            if (ok == false || !error.isNullOrEmpty()) {
+                return FunctionResult.Failure(
+                    displayText = "AppFunction ${fn.id}（${fn.packageName}）返回失败：" +
+                        (error?.takeIf { it.isNotEmpty() } ?: "未知错误") +
+                        (status?.let { "，status=$it" } ?: ""),
+                )
+            }
 
             FunctionResult.Success(
                 displayText = "已调用 ${fn.packageName}#${fn.id}（${fn.serviceName}）" +

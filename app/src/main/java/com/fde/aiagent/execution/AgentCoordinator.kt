@@ -126,6 +126,10 @@ class AgentCoordinator(context: Context) {
     fun playVideo(path: String, title: String) =
         directFunction(AppFunctionCatalog.FUNC_PLAY_VIDEO, mapOf("path" to path, "title" to title))
 
+    /** 「打开设置页」按钮：跨应用调用 Settings 的 openSettingsPage。 */
+    fun openSettingsPage(page: String) =
+        directFunction(AppFunctionCatalog.FUNC_OPEN_SETTINGS_PAGE, mapOf("page" to page))
+
     private fun directFunction(functionId: String, params: Map<String, String>) {
         if (!running.compareAndSet(false, true)) {
             emit(AgentEvent.Logged("已有任务正在执行，请等待完成。"))

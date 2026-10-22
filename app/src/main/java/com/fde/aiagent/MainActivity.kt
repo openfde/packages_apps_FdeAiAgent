@@ -44,6 +44,7 @@ class MainActivity : Activity(), ExecutionListener {
     private val renderer = SvgStateRenderer()
 
     private lateinit var spProvider: Spinner
+    private lateinit var spSettingsPage: Spinner
     private lateinit var editApiKey: EditText
     private lateinit var editModel: EditText
     private lateinit var editBaseUrl: EditText
@@ -72,6 +73,15 @@ class MainActivity : Activity(), ExecutionListener {
         private const val KEY_PROMPT = "prompt"
 
         private const val DEFAULT_IMAGE_PATH = "/mnt/sdcard/Pictures/aa.png"
+
+        /** 「打开设置页」下拉可选页面：key -> 中文名（与 Settings 的 openSettingsPage 保持一致）。 */
+        private val SETTINGS_PAGES = listOf(
+            "wifi" to "Wi-Fi",
+            "display" to "显示",
+            "sound" to "声音",
+            "apps" to "应用",
+            "storage" to "存储",
+        )
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -81,6 +91,7 @@ class MainActivity : Activity(), ExecutionListener {
         actionBar?.hide()
         prefs = getSharedPreferences(PREFS, Context.MODE_PRIVATE)
         spProvider = findViewById(R.id.spProvider)
+        spSettingsPage = findViewById(R.id.spSettingsPage)
         editApiKey = findViewById(R.id.editApiKey)
         editModel = findViewById(R.id.editModel)
         editBaseUrl = findViewById(R.id.editBaseUrl)
@@ -101,6 +112,13 @@ class MainActivity : Activity(), ExecutionListener {
             this,
             android.R.layout.simple_spinner_item,
             providers.map { it.label },
+        ).apply { setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item) }
+
+        // 设置页选择：wifi/display/sound/apps/storage
+        spSettingsPage.adapter = ArrayAdapter(
+            this,
+            android.R.layout.simple_spinner_item,
+            SETTINGS_PAGES.map { (key, name) -> "$key（$name）" },
         ).apply { setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item) }
 
         // 恢复上次保存的配置
@@ -137,6 +155,13 @@ class MainActivity : Activity(), ExecutionListener {
             if (path.isEmpty()) { toast("请填写图片路径"); return@setOnClickListener }
             appendLog("===== 直接调用相册 AppFunction: openImage =====")
             coordinator.openImage(path, defaultTitle(path))
+        }
+        findViewById<Button>(R.id.btnOpenSettings).setOnClickListener {
+            saveSettings()
+            val index = spSettingsPage.selectedItemPosition.coerceIn(0, SETTINGS_PAGES.lastIndex)
+            val page = SETTINGS_PAGES.getOrNull(index)?.first ?: "wifi"
+            appendLog("===== 直接调用设置 AppFunction: openSettingsPage($page) =====")
+            coordinator.openSettingsPage(page)
         }
         findViewById<Button>(R.id.btnGrantFunctionPermission).setOnClickListener {
             appendLog(coordinator.permissionSummary())
