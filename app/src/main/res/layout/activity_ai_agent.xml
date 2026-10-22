@@ -257,7 +257,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
-                android:text="可用 Skill：app_inspect / file_search / task_create / open_settings_page"
+                android:text="可用 Skill：app_inspect / file_search / task_create / settings"
                 android:textColor="@color/pc_text_secondary"
                 android:textSize="11sp" />
 

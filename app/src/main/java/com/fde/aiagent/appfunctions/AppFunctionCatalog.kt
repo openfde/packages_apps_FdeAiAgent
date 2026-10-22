@@ -5,7 +5,8 @@ package com.fde.aiagent.appfunctions
  *
  * 目前有两类能力：
  *  - 相册 `com.fde.gallery3d` 对外暴露的媒体能力（openImage / playVideo）；
- *  - 系统设置 `com.android.settings` 对外开放的「打开设置页」能力（openSettingsPage）。
+ *  - 系统设置 `com.android.settings` 对外开放的「设置控制」能力：openSettingsPage
+ *    （打开设置页）与 adjustBrightness（调节屏幕亮度）。
  *
  * 新增能力时只需在这里加一条 [AppFunction]，Skill / AI 客户端 / 分发器无需改动。
  */
@@ -21,6 +22,7 @@ object AppFunctionCatalog {
     const val FUNC_OPEN_IMAGE = "openImage"
     const val FUNC_PLAY_VIDEO = "playVideo"
     const val FUNC_OPEN_SETTINGS_PAGE = "openSettingsPage"
+    const val FUNC_ADJUST_BRIGHTNESS = "adjustBrightness"
 
     /** 在相册中打开指定绝对路径的图片预览。 */
     val OPEN_IMAGE = AppFunction(
@@ -78,7 +80,31 @@ object AppFunctionCatalog {
         requiredParams = listOf("page"),
     )
 
-    val ALL: List<AppFunction> = listOf(OPEN_IMAGE, PLAY_VIDEO, OPEN_SETTINGS_PAGE)
+    /**
+     * 调节屏幕亮度（参数 action：brighten 调亮 / dim 调暗；step 每次调节的亮度百分比，
+     * 可选、默认 10、范围 1~100，settings 侧通过 getPropertyLongArray 读取，因此分发时
+     * step 会用 Long 属性下发）。功能定义见 Settings 的 fdesettings_appfunctions.xml 与
+     * OpenSettingsPageAppFunctionService.adjustBrightness。
+     */
+    val ADJUST_BRIGHTNESS = AppFunction(
+        id = FUNC_ADJUST_BRIGHTNESS,
+        packageName = SETTINGS_PACKAGE,
+        serviceName = SETTINGS_SERVICE,
+        description = "调节屏幕亮度（action: brighten 调亮 / dim 调暗；step 可选，每次调节的亮度百分比）",
+        schemaJson = """
+            {
+              "type": "object",
+              "properties": {
+                "action": { "type": "string", "description": "亮度调节方向：brighten（调亮）/ dim（调暗）" },
+                "step": { "type": "integer", "description": "每次调节的亮度百分比，默认 10，范围 1~100" }
+              },
+              "required": ["action"]
+            }
+        """.trimIndent(),
+        requiredParams = listOf("action"),
+    )
+
+    val ALL: List<AppFunction> = listOf(OPEN_IMAGE, PLAY_VIDEO, OPEN_SETTINGS_PAGE, ADJUST_BRIGHTNESS)
 
     private val byId: Map<String, AppFunction> = ALL.associateBy { it.id }
 

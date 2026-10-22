@@ -47,7 +47,16 @@ class AppFunctionDispatcher(
                 /* id = */ fn.id,
                 /* schemaType = */ fn.id,
             )
-            params.forEach { (key, value) -> documentBuilder.setPropertyString(key, value) }
+            // 数字参数（如 adjustBrightness 的 step）需要以 Long 属性下发，Settings 侧通过
+            // getPropertyLongArray 读取；纯字符串参数保持 setPropertyString。
+            params.forEach { (key, value) ->
+                val longValue = value.trim().toLongOrNull()
+                if (longValue != null) {
+                    documentBuilder.setPropertyLong(key, longValue)
+                } else {
+                    documentBuilder.setPropertyString(key, value)
+                }
+            }
             val parameters = documentBuilder.build()
 
             val request = PlatformExecuteAppFunctionRequest
@@ -59,7 +68,9 @@ class AppFunctionDispatcher(
             // 不同应用的结果文档形态不同：
             //  - 相册 MediaResult：成功带 status="ok"；
             //  - 设置 SettingsPageResult：成功 ok=true、status="launch_requested"；
-            //    失败 ok=false、error="unsupported_page" 等。
+            //    失败 ok=false、error="unsupported_page" 等；
+            //  - 设置 BrightnessAdjustResult：成功 ok=true、status="brightness_adjusted"、
+            //    带 action/before/after；失败 ok=false、error="invalid_action" 等。
             // 这里统一解析，把设置侧的业务失败也归为 Failure 反馈给用户/模型。
             val doc = response.resultDocument
             val names = runCatching { doc.propertyNames }.getOrNull() ?: emptySet()

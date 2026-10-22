@@ -10,7 +10,7 @@
 | --- | --- | --- |
 | 意图/规划 | `ai/AiProvider.kt`、`ai/AiClient.kt` | 多供应商 LLM 客户端（OpenAI 兼容 + Gemini）；理解用户意图；从 Skill 目录中选择 Skill 并填写入参（`run_skill` 工具），或直接回答 |
 | Skill | `skill/SkillRegistry.kt`、`skill/SkillEngine.kt` | 装载 `assets/skills/**/SKILL.md`；把多个工具编排成可复用的多步骤流程 |
-| AppFunctions | `appfunctions/AppFunctionCatalog.kt`、`appfunctions/AppFunctionDispatcher.kt` | 登记/分发 Android 应用暴露的真实能力（相册 openImage / playVideo、系统设置 openSettingsPage） |
+| AppFunctions | `appfunctions/AppFunctionCatalog.kt`、`appfunctions/AppFunctionDispatcher.kt` | 登记/分发 Android 应用暴露的真实能力（相册 openImage / playVideo、系统设置 openSettingsPage / adjustBrightness） |
 | 权限与执行 | `execution/PermissionGuard.kt`、`execution/AgentCoordinator.kt` | 统一安全把关 + 流水线总协调 |
 | SVG 状态面板 | `ui/SvgStateRenderer.kt` | 用统一执行事件渲染流程节点、日志尾部与错误提示（WebView 展示） |
 
@@ -25,7 +25,7 @@ app/src/main/
 ├── assets/skills/
 │   ├── app_inspect/SKILL.md      # 检查 AppFunctions 环境并打开图片/播放视频（含权限检查）
 │   ├── file_search/SKILL.md      # 目录内按规则搜索文件（内置工具）
-│   ├── open_settings_page/SKILL.md  # 打开系统设置页 wifi/display/sound/apps/storage（openSettingsPage）
+│   ├── settings/SKILL.md        # 系统设置控制：打开设置页 wifi/display/sound/apps/storage（openSettingsPage）+ 调节屏幕亮度（adjustBrightness）
 │   └── task_create/SKILL.md      # 写入任务文件并回读校验（演示权限守卫 + 引用链）
 └── java/com/fde/aiagent/
     ├── MainActivity.kt              # 纯 UI：选择供应商/填 key、订阅事件、驱动 SVG/日志/错误提示
@@ -68,20 +68,32 @@ app/src/main/
 新增一家 OpenAI 兼容的供应商只需在 `AiProvider.kt` 枚举里加一项；非兼容协议（如 Gemini）
 需在 `AiClient.kt` 中增加对应的请求 / 解析分支（已内置 Gemini，可直接参照扩展）。
 
-### 2.2 打开系统设置页（openSettingsPage）
+### 2.2 系统设置控制（settings：openSettingsPage / adjustBrightness）
 
 系统设置应用 `com.android.settings` 通过 `OpenSettingsPageAppFunctionService`
-（`assets/fdesettings_appfunctions.xml` 声明，见 Settings 源码）对外开放 `openSettingsPage`
-AppFunction，参数 `page` 取值与 FdeSystemControl 的 `SystemControlService.openSettingsPage`
-保持一致：`wifi` / `display` / `sound` / `apps` / `storage`。
+（`assets/fdesettings_appfunctions.xml` 声明，见 Settings 源码）对外开放两个 AppFunction：
+
+- `openSettingsPage`：打开指定设置页，参数 `page` 取值与 FdeSystemControl 的
+  `SystemControlService.openSettingsPage` 保持一致：`wifi` / `display` / `sound` / `apps` / `storage`。
+- `adjustBrightness`：调节屏幕亮度，参数 `action`（`brighten` 调亮 / `dim` 调暗）必填，
+  `step` 可选（每次调节的亮度百分比，默认 10，范围 1~100）。亮度换算逻辑与
+  `src/com/android/settings/display/BrightnessLevelPreference.kt` 一致；`step` 在 settings
+  侧通过 `getPropertyLongArray` 读取，因此分发器会把数字参数以 Long 属性下发。
+  命令行等价用法：
+  ```
+  cmd app_function execute-app-function --brief-yaml \
+    --package com.android.settings --function 'adjustBrightness' \
+    --parameters '{"action":"brighten","step":50}'
+  ```
 
 FdeAiAgent 侧只需做消费方接入：
 
-- `AppFunctionCatalog` 增加 `OPEN_SETTINGS_PAGE` 目录项（包名 / 服务名 / 参数 schema）；
-- 新增 Skill `open_settings_page`（`assets/skills/open_settings_page/SKILL.md`），使 AI 能规划
-  「打开 WiFi 设置」这类指令；
-- 结果文档按 `ok` / `status` / `error` 解析：`ok=false, error="unsupported_page"` 等会被
-  `AppFunctionDispatcher` 识别为失败并反馈给用户。
+- `AppFunctionCatalog` 增加 `OPEN_SETTINGS_PAGE` / `ADJUST_BRIGHTNESS` 目录项（包名 /
+  服务名 / 参数 schema）；
+- 合并为单个 Skill `settings`（`assets/skills/settings/SKILL.md`），使 AI 能规划
+  「打开 WiFi 设置」「把屏幕调亮一点」「把屏幕调暗一点」这类指令；
+- 结果文档按 `ok` / `status` / `error` 解析：`ok=false, error="unsupported_page"` /
+  `error="invalid_action"` 等会被 `AppFunctionDispatcher` 识别为失败并反馈给用户。
 
 ## 3. 一次「打开图片」的执行时序
 

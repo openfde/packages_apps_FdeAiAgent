@@ -130,6 +130,16 @@ class AgentCoordinator(context: Context) {
     fun openSettingsPage(page: String) =
         directFunction(AppFunctionCatalog.FUNC_OPEN_SETTINGS_PAGE, mapOf("page" to page))
 
+    /** 调节屏幕亮度：跨应用调用 Settings 的 adjustBrightness（action: brighten/dim，step 可选）。 */
+    fun adjustBrightness(action: String, step: String? = null) =
+        directFunction(
+            AppFunctionCatalog.FUNC_ADJUST_BRIGHTNESS,
+            buildMap {
+                put("action", action)
+                step?.takeIf { it.isNotBlank() }?.let { put("step", it) }
+            },
+        )
+
     private fun directFunction(functionId: String, params: Map<String, String>) {
         if (!running.compareAndSet(false, true)) {
             emit(AgentEvent.Logged("已有任务正在执行，请等待完成。"))
