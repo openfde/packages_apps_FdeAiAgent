@@ -1,6 +1,6 @@
 ---
 name: settings
-version: 1.1.0
+version: 1.2.0
 description: 控制系统设置：打开指定的系统设置页面（wifi / display / sound / apps / storage），调节屏幕亮度（调亮 brighten / 调暗 dim）、调节媒体音量（调高 volume_up / 调低 volume_down / 静音 mute / 取消静音 unmute）、开启或关闭深色模式（on / off），通过系统设置应用 com.android.settings 暴露的 AppFunction openSettingsPage / adjustBrightness / adjustMediaVolume / setDarkTheme 实现
 tags:
   - settings
@@ -98,17 +98,20 @@ steps:
 读取当前亮度到 gamma 空间换算成百分比后，在当前位置上增加/减少 `step` 个百分比，
 再通过 `DisplayManager#setBrightness(..., BRIGHTNESS_UNIT_PERCENTAGE)` 写回。
 
-### 3. 调节媒体音量（adjustMediaVolume）
+### 3. 调节媒体音量 / 静音（adjustMediaVolume）
 
 | 参数 | 必填 | 取值 |
 | --- | --- | --- |
-| `action` | 是 | `volume_up`（调高）/ `volume_down`（调低） |
-| `step` | 否（默认 10） | 每次调节的音量百分比，1~100 |
+| `action` | 是 | `volume_up`（调高）/ `volume_down`（调低）/ `mute`（静音）/ `unmute`（取消静音） |
+| `step` | 否（默认 10） | 每次调节的音量百分比，1~100；**仅对** `volume_up` / `volume_down` 生效 |
 
 音量读写基于 `AudioManager` 的 `STREAM_MUSIC` 流：读当前分档
-`getStreamVolume`，把 `step` 个百分比换算为分档步长够在
+`getStreamVolume`，把 `step` 个百分比换算为分档步长并在
 `[getStreamMinVolume, getStreamMaxVolume]` 范围内，再通过
-`AudioManager#setStreamVolume` 写回；返回结果带调节前后的音量百分比（before/after）。
+`AudioManager#setStreamVolume` 写回；`mute` / `unmute` 通过
+`AudioManager#adjustStreamVolume(ADJUST_MUTE / ADJUST_UNMUTE)` 切换静音状态，对已处于
+目标状态的情况幂等无副作用（静音不改变音量数值）。返回结果带调节前后的音量百分比
+（before/after）以及调节后的静音状态 `muted`（分发器会拼进成功文案）。
 
 ### 4. 深色模式（setDarkTheme）
 
@@ -152,6 +155,20 @@ cmd app_function execute-app-function \
   --function 'adjustMediaVolume' \
   --parameters '{"action":"volume_down","step":"0"}'
 
+# 静音（媒体音量静音）
+cmd app_function execute-app-function \
+  --brief-yaml \
+  --package com.android.settings \
+  --function 'adjustMediaVolume' \
+  --parameters '{"action":"mute","step":"0"}'
+
+# 取消静音（恢复媒体音量）
+cmd app_function execute-app-function \
+  --brief-yaml \
+  --package com.android.settings \
+  --function 'adjustMediaVolume' \
+  --parameters '{"action":"unmute","step":"0"}'
+
 # 开启深色模式
 cmd app_function execute-app-function \
   --brief-yaml \
@@ -173,9 +190,11 @@ cmd app_function execute-app-function \
   功能，未填写的操作对应的步骤会被跳过（标记为 SKIPPED）。
 - `page` 取值限定为：`wifi` / `display` / `sound` / `apps` / `storage`；设置侧对未知
   `page` 会返回 `ok=false, error="unsupported_page"`，分发层会将其识别为失败并提示。
-- 亮度 `action` 取值限定为：`brighten` / `dim`；音量 `action` 取值限定为：
-  `volume_up` / `volume_down`；深色模式 `action` 取值限定为 `on` / `off`。其它取值
-  设置侧都会返回 `ok=false, error="invalid_action"`。
+- 亮度 `action` 取值限定为：`brighten` / `dim`；音量 `action`（即 `volume_action`）取值限定
+  为：`volume_up` / `volume_down` / `mute` / `unmute`；深色模式 `action` 取值限定为
+  `on` / `off`。其它取值设置侧都会返回 `ok=false, error="invalid_action"`。
+- 音量 `step` 仅对 `volume_up` / `volume_down` 生效；`mute` / `unmute` 不改变音量数值，
+  只切换媒体流的静音状态且幂等（已静音再 mute、未静音再 unmute 均无副作用）。
 - `step` 为整数百分比，越界会被限制在 1~100 之间，缺省按 10 处理。
 - 每个 AppFunction 步骤都会先经过 `PermissionGuard`，缺少权限时该节点标记为失败，
   并把具体原因返回给用户（而不是继续执行）。

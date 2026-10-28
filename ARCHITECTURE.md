@@ -80,9 +80,12 @@ app/src/main/
 - `adjustBrightness`：调节屏幕亮度，参数 `action`（`brighten` 调亮 / `dim` 调暗）必填，
   `step` 可选（每次调节的亮度百分比，默认 10，范围 1~100）。亮度换算逻辑与
   `src/com/android/settings/display/BrightnessLevelPreference.kt` 一致。
-- `adjustMediaVolume`：调节媒体音量，参数 `action`（`volume_up` 调高 / `volume_down` 调低）
-  必填，`step` 可选（每次调节的音量百分比，默认 10，范围 1~100），映射到媒体音量
-  `[getStreamMinVolume, getStreamMaxVolume]` 分档范围，通过 `AudioManager#setStreamVolume` 写回。
+- `adjustMediaVolume`：调节媒体音量 / 静音，参数 `action`（`volume_up` 调高 / `volume_down`
+  调低 / `mute` 静音 / `unmute` 取消静音）必填，`step` 可选（每次调节的音量百分比，默认 10，
+  范围 1~100，**仅对** `volume_up` / `volume_down` 生效），映射到媒体音量
+  `[getStreamMinVolume, getStreamMaxVolume]` 分档范围，通过 `AudioManager#setStreamVolume`
+  写回；`mute` / `unmute` 通过 `AudioManager#adjustStreamVolume(ADJUST_MUTE / ADJUST_UNMUTE)`
+  切换静音状态（幂等无副作用）。
 - `setDarkTheme`：开启/关闭深色模式，参数 `action`（`on` 开启 / `off` 关闭）必填，通过
   `UiModeManager#setNightModeActivated` 切换，行为与 `DarkModeActivationPreferenceController` 一致。
 - `openApp`：按包名或应用名打开某个应用。参数 `packageName`（可选）或 `appName`（可选），
@@ -91,6 +94,7 @@ app/src/main/
   命中唯一应用后打开。
 
 其中 `adjustBrightness` / `adjustMediaVolume` 结果带 `before` / `after` 百分比，
+`adjustMediaVolume` 另带 `muted`（调节后的静音状态），
 `setDarkTheme` 带 `enabled`，`openApp` 带解析后的 `packageName` / `appName`；分发器
 会把它们拼进成功文案返回。注意：`openApp` 属于「apps」类别，FdeAiAgent 侧单独建模为
 `app_open` Skill（见 2.4），避免与设置控制混淆。
