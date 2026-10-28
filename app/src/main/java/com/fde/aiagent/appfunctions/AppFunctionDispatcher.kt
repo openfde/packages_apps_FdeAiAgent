@@ -75,7 +75,10 @@ class AppFunctionDispatcher(
             //    （百分比）；失败 ok=false、error="invalid_action" 等；
             //  - 设置 DarkThemeResult：成功 status="dark_theme_set"，带 action/enabled；
             //  - 设置 OpenAppResult：成功 status="launch_requested"，带解析出的 packageName/
-            //    appName。
+            //    appName；
+            //  - DocumentsUI FileOpResult：成功 status="ok"，deleteFile 带 path、moveFiles 带
+            //    movedCount（Long）、renameFolder 带 path/newPath、emptyTrash 带 deletedCount（Long）；
+            //    失败通过 AppFunctionException（onError）返回。
             // 这里统一解析，把设置侧的业务失败也归为 Failure 反馈给用户/模型。
             val doc = response.resultDocument
             val names = runCatching { doc.propertyNames }.getOrNull() ?: emptySet()
@@ -94,6 +97,12 @@ class AppFunctionDispatcher(
             // openApp 结果带解析后的包名 / 应用名。
             val resolvedPackage = runCatching { doc.getPropertyString("packageName") }.getOrNull()
             val resolvedAppName = runCatching { doc.getPropertyString("appName") }.getOrNull()
+            // DocumentsUI 文件操作结果：deleteFile/renameFolder 带 path（与 newPath）；
+            // moveFiles / emptyTrash 带数量统计（Long）。
+            val resultPath = runCatching { doc.getPropertyString("path") }.getOrNull()
+            val newPath = runCatching { doc.getPropertyString("newPath") }.getOrNull()
+            val movedCount = runCatching { doc.getPropertyLong("movedCount") }.getOrNull()
+            val deletedCount = runCatching { doc.getPropertyLong("deletedCount") }.getOrNull()
             // getPropertyBoolean 在属性缺失时返回 false，必须先判断属性是否存在。
             val hasOkProp = names.contains("ok")
             val ok = if (hasOkProp) runCatching { doc.getPropertyBoolean("ok") }.getOrNull() else null
@@ -115,6 +124,10 @@ class AppFunctionDispatcher(
                     if (enabled != null) append("，深色模式=${if (enabled) "开启" else "关闭"}")
                     if (resolvedPackage != null) append("，应用包名=$resolvedPackage")
                     if (resolvedAppName != null) append("，应用名=$resolvedAppName")
+                    if (resultPath != null) append("，路径=$resultPath")
+                    if (newPath != null) append("，新路径=$newPath")
+                    if (movedCount != null) append("，已移动 $movedCount 项")
+                    if (deletedCount != null) append("，已删除 $deletedCount 项")
                     outputPath?.takeIf { it.isNotEmpty() }?.let { append("，输出: $it") }
                 },
                 raw = status ?: "ok",

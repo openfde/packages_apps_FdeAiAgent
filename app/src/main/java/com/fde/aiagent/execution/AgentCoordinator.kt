@@ -175,6 +175,28 @@ class AgentCoordinator(context: Context) {
             },
         )
 
+    /** 删除（移入回收站）文件/文件夹：跨应用调用 DocumentsUI 的 deleteFile（path 必填）。 */
+    fun deleteFile(path: String) =
+        directFunction(AppFunctionCatalog.FUNC_DELETE_FILE, mapOf("path" to path))
+
+    /** 移动源文件夹下的文件到目标目录：跨应用调用 DocumentsUI 的 moveFiles。 */
+    fun moveFiles(sourcePath: String, destinationPath: String) =
+        directFunction(
+            AppFunctionCatalog.FUNC_MOVE_FILES,
+            mapOf("sourcePath" to sourcePath, "destinationPath" to destinationPath),
+        )
+
+    /** 重命名文件/文件夹：跨应用调用 DocumentsUI 的 renameFolder（path + newName 必填）。 */
+    fun renameFolder(path: String, newName: String) =
+        directFunction(
+            AppFunctionCatalog.FUNC_RENAME_FOLDER,
+            mapOf("path" to path, "newName" to newName),
+        )
+
+    /** 清空系统回收站：跨应用调用 DocumentsUI 的 emptyTrash（无参数，不可恢复）。 */
+    fun emptyTrash() =
+        directFunction(AppFunctionCatalog.FUNC_EMPTY_TRASH, emptyMap())
+
     private fun directFunction(functionId: String, params: Map<String, String>) {
         if (!running.compareAndSet(false, true)) {
             emit(AgentEvent.Logged("已有任务正在执行，请等待完成。"))

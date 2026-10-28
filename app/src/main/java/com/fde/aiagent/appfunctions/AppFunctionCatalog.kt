@@ -8,7 +8,9 @@ package com.fde.aiagent.appfunctions
  *  - 系统设置 `com.android.settings` 对外暴露的「设置控制 / 应用启动」能力：
  *    openSettingsPage（打开设置页）、adjustBrightness（调节屏幕亮度）、
  *    adjustMediaVolume（调节媒体音量）、setDarkTheme（开启/关闭深色主题）、
- *    openApp（按包名/应用名打开应用）。
+ *    openApp（按包名/应用名打开应用）；
+ *  - 文件管理器 `com.android.documentsui` 对外暴露的文件操作能力：deleteFile（删除移入
+ *    回收站）、moveFiles（移动文件夹下的文件）、renameFolder（重命名）、emptyTrash（清空回收站）。
  *
  * 新增能力时只需在这里加一条 [AppFunction]，Skill / AI 客户端 / 分发器无需改动。
  */
@@ -21,6 +23,10 @@ object AppFunctionCatalog {
     const val SETTINGS_SERVICE =
         "com.android.settings.appfunctions.OpenSettingsPageAppFunctionService"
 
+    const val DOCUMENTS_PACKAGE = "com.android.documentsui"
+    const val DOCUMENTS_SERVICE =
+        "com.android.documentsui.appfunctions.DocumentsUiAppFunctionService"
+
     const val FUNC_OPEN_IMAGE = "openImage"
     const val FUNC_PLAY_VIDEO = "playVideo"
     const val FUNC_EDIT_IMAGE = "editImage"
@@ -29,6 +35,10 @@ object AppFunctionCatalog {
     const val FUNC_ADJUST_MEDIA_VOLUME = "adjustMediaVolume"
     const val FUNC_SET_DARK_THEME = "setDarkTheme"
     const val FUNC_OPEN_APP = "openApp"
+    const val FUNC_DELETE_FILE = "deleteFile"
+    const val FUNC_MOVE_FILES = "moveFiles"
+    const val FUNC_RENAME_FOLDER = "renameFolder"
+    const val FUNC_EMPTY_TRASH = "emptyTrash"
 
     /** 在相册中打开指定绝对路径的图片预览。 */
     val OPEN_IMAGE = AppFunction(
@@ -209,10 +219,105 @@ object AppFunctionCatalog {
         requiredParams = listOf(),
     )
 
+    /**
+     * 删除（移入系统回收站）某个文件或文件夹（参数 path 必填：绝对路径或相对桌面的名称如
+     * a.txt，等价于 /storage/emulated/0/Desktop/a.txt）。删除后可在回收站页面恢复，与
+     * DocumentsUI「删除即移入回收站」行为一致，通过 FileUtils.trashPathSync 实现。
+     * 结果带 status="ok" 与删除的文件路径 path。
+     * 功能定义见 DocumentsUI 的 assets/appfunctions.xml 与
+     * DocumentsUiAppFunctionService.deleteFile。
+     */
+    val DELETE_FILE = AppFunction(
+        id = FUNC_DELETE_FILE,
+        packageName = DOCUMENTS_PACKAGE,
+        serviceName = DOCUMENTS_SERVICE,
+        description = "删除文件/文件夹（移入系统回收站，可恢复；path 必填，支持绝对路径或相对桌面的名称）",
+        schemaJson = """
+            {
+              "type": "object",
+              "properties": {
+                "path": { "type": "string", "description": "要删除（移入回收站）的文件/文件夹路径，绝对路径或相对桌面名称，例如 /storage/emulated/0/Desktop/a.txt 或 a.txt" }
+              },
+              "required": ["path"]
+            }
+        """.trimIndent(),
+        requiredParams = listOf("path"),
+    )
+
+    /**
+     * 把某个文件夹下的所有文件/子文件夹移动到某个目标目录（参数 sourcePath 必填、源文件夹；
+     * destinationPath 必填、目标目录）。目标目录不存在时自动创建；目标里已有同名项时自动生成
+     * 唯一名称避免覆盖；返回实际移动的项数 movedCount。功能定义见 DocumentsUI 的
+     * assets/appfunctions.xml 与 DocumentsUiAppFunctionService.moveFiles。
+     */
+    val MOVE_FILES = AppFunction(
+        id = FUNC_MOVE_FILES,
+        packageName = DOCUMENTS_PACKAGE,
+        serviceName = DOCUMENTS_SERVICE,
+        description = "把源文件夹下的所有文件/子文件夹移动到目标目录（sourcePath 与 destinationPath 必填，支持绝对路径或相对桌面的名称）",
+        schemaJson = """
+            {
+              "type": "object",
+              "properties": {
+                "sourcePath": { "type": "string", "description": "源文件夹路径（绝对路径或相对桌面的名称）" },
+                "destinationPath": { "type": "string", "description": "目标目录路径（绝对路径或相对桌面的名称），不存在时自动创建" }
+              },
+              "required": ["sourcePath", "destinationPath"]
+            }
+        """.trimIndent(),
+        requiredParams = listOf("sourcePath", "destinationPath"),
+    )
+
+    /**
+     * 重命名某个文件/文件夹（参数 path 必填；newName 必填、新名称，不能含路径分隔符；目标位置
+     * 已存在同名项则报错）。成功返回新路径 newPath。功能定义见 DocumentsUI 的
+     * assets/appfunctions.xml 与 DocumentsUiAppFunctionService.renameFolder。
+     */
+    val RENAME_FOLDER = AppFunction(
+        id = FUNC_RENAME_FOLDER,
+        packageName = DOCUMENTS_PACKAGE,
+        serviceName = DOCUMENTS_SERVICE,
+        description = "重命名文件/文件夹（path 与 newName 必填，支持绝对路径或相对桌面的名称）",
+        schemaJson = """
+            {
+              "type": "object",
+              "properties": {
+                "path": { "type": "string", "description": "要重命名的文件/文件夹路径（绝对路径或相对桌面的名称）" },
+                "newName": { "type": "string", "description": "重命名后的新名称，例如 b.txt，不能含路径分隔符" }
+              },
+              "required": ["path", "newName"]
+            }
+        """.trimIndent(),
+        requiredParams = listOf("path", "newName"),
+    )
+
+    /**
+     * 清空系统回收站，永久删除回收站中的全部内容（实现参考
+     * EmptyTrashActivity.emptyTrashAndFinish，通过 FileUtils.clearTrashFolder 删除并重置
+     * trash_storage 标记）。无参数。返回实际删除项数 deletedCount。
+     * 功能定义见 DocumentsUI 的 assets/appfunctions.xml 与
+     * DocumentsUiAppFunctionService.emptyTrash。
+     */
+    val EMPTY_TRASH = AppFunction(
+        id = FUNC_EMPTY_TRASH,
+        packageName = DOCUMENTS_PACKAGE,
+        serviceName = DOCUMENTS_SERVICE,
+        description = "清空系统回收站，永久删除回收站中的全部内容（无需参数，此操作不可恢复）",
+        schemaJson = """
+            {
+              "type": "object",
+              "properties": {},
+              "required": []
+            }
+        """.trimIndent(),
+        requiredParams = listOf(),
+    )
+
     val ALL: List<AppFunction> = listOf(
         OPEN_IMAGE, PLAY_VIDEO, EDIT_IMAGE,
         OPEN_SETTINGS_PAGE, ADJUST_BRIGHTNESS,
         ADJUST_MEDIA_VOLUME, SET_DARK_THEME, OPEN_APP,
+        DELETE_FILE, MOVE_FILES, RENAME_FOLDER, EMPTY_TRASH,
     )
 
     private val byId: Map<String, AppFunction> = ALL.associateBy { it.id }

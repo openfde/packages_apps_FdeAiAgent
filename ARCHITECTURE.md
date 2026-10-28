@@ -25,6 +25,7 @@ app/src/main/
 ├── assets/skills/
 │   ├── gallery/SKILL.md         # 相册媒体操作：打开图片/播放视频/图片滤镜编辑（openImage/playVideo/editImage，含权限检查）
 │   ├── file_search/SKILL.md      # 目录内按规则搜索文件（内置工具）
+│   ├── file_op/SKILL.md          # 文件管理操作（DocumentsUI）：删除移入回收站（deleteFile）、移动文件（moveFiles）、重命名（renameFolder）、清空回收站（emptyTrash）
 │   ├── settings/SKILL.md        # 系统设置控制：打开设置页 wifi/display/sound/apps/storage（openSettingsPage）+ 调节屏幕亮度（adjustBrightness）+ 调节媒体音量（adjustMediaVolume）+ 开启/关闭深色模式（setDarkTheme）
 │   ├── app_open/SKILL.md        # 打开应用：按包名或应用名打开（openApp，经 Settings 的 OpenSettingsPageAppFunctionService）
 │   └── task_create/SKILL.md      # 写入任务文件并回读校验（演示权限守卫 + 引用链）
@@ -157,6 +158,34 @@ FdeAiAgent 侧消费方接入：
 - 单独建模为 Skill `app_open`（`assets/skills/app_open/SKILL.md`），使 AI 能规划
   「打开设置」「打开相册」这类指令（与 `settings` Skill 区分开，避免模型混淆）；
 - 结果文档 `OpenAppResult` 带解析后的 `packageName` / `appName`，分发器会拼进成功文案。
+
+### 2.5 文件管理操作（file_op：deleteFile / moveFiles / renameFolder / emptyTrash）
+
+文件管理器 `com.android.documentsui` 通过 `DocumentsUiAppFunctionService`
+（`assets/appfunctions.xml` 声明，见 DocumentsUI 源码）对外开放四个文件操作的 AppFunction：
+
+- `deleteFile`：删除（移入系统回收站）文件/文件夹，可在回收站页面恢复，参数 `path`（必填）；
+- `moveFiles`：把源文件夹下的所有文件/子文件夹移动到目标目录，参数 `sourcePath`（必填）、
+  `destinationPath`（必填）；目标不存在时自动创建，已有同名项自动生成唯一名称避免覆盖，
+  返回 `movedCount`；
+- `renameFolder`：重命名文件/文件夹（对文件同样生效），参数 `path`（必填）+ `newName`
+  （必填）；成功返回新路径 `newPath`；
+- `emptyTrash`：清空系统回收站，永久删除其中全部内容，无参数；返回 `deletedCount`。
+
+四个函数的路径参数均支持绝对路径（如 `/storage/emulated/0/Desktop/a.txt`），也支持相对
+桌面（Desktop）的名称（如 `a.txt`，等价于 `/storage/emulated/0/Desktop/a.txt`），与
+DocumentsUI 的 `IpcService` 约定保持一致。失败场景（参数缺失 / 文件不存在 / 目标非法等）
+通过 `AppFunctionException` 返回，分发器会把可读原因反馈给用户。
+
+FdeAiAgent 侧消费方接入：
+
+- `AppFunctionCatalog` 增加 `DELETE_FILE` / `MOVE_FILES` / `RENAME_FOLDER` / `EMPTY_TRASH`
+  目录项（包名 `com.android.documentsui` / 服务名 / 参数 schema）；
+- 合并为单个 Skill `file_op`（`assets/skills/file_op/SKILL.md`），使 AI 能规划
+  「删除 a.txt」「把临时文件夹里的文件移到归档」「把报告改名为报告2026」「清空回收站」
+  这类指令（与只读的 `file_search` Skill 区分开）；
+- 结果文档 `FileOpResult` 统一解析：`status="ok"`，按 `path` / `newPath` / `movedCount` /
+  `deletedCount` 拼进成功文案与用户反馈。
 
 ## 3. 一次「打开图片」的执行时序
 
