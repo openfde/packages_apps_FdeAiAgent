@@ -145,10 +145,12 @@ object AppFunctionCatalog {
     )
 
     /**
-     * 调节媒体音量（参数 action：volume_up 调高 / volume_down 调低；step 每次调节的音量百分比，
-     * 可选、默认 10、范围 1~100，映射到媒体音量的分档范围 [min, max]，settings 侧通过
-     * getPropertyLongArray 读取 step，因此分发时 step 用 Long 属性下发，通过
-     * AudioManager#setStreamVolume 写回）。返回结果带 before / after 百分比。
+     * 调节媒体音量 / 静音（参数 action：volume_up 调高 / volume_down 调低 / mute 静音 /
+     * unmute 取消静音；step 每次调节的音量百分比，可选、仅 volume_up/volume_down 生效，默认 10、
+     * 范围 1~100，映射到媒体音量的分档范围 [min, max]，settings 侧通过 getPropertyLongArray
+     * 读取 step，因此分发时 step 用 Long 属性下发，通过 AudioManager#setStreamVolume 写回；
+     * mute/unmute 通过 adjustStreamVolume 的 ADJUST_MUTE / ADJUST_UNMUTE 切换，幂等无副作用）。
+     * 返回结果带 before / after 百分比与 muted 静音状态。
      * 功能定义见 Settings 的 fdesettings_appfunctions.xml 与
      * OpenSettingsPageAppFunctionService.adjustMediaVolume。
      */
@@ -156,13 +158,13 @@ object AppFunctionCatalog {
         id = FUNC_ADJUST_MEDIA_VOLUME,
         packageName = SETTINGS_PACKAGE,
         serviceName = SETTINGS_SERVICE,
-        description = "调节媒体音量（action: volume_up 调高 / volume_down 调低；step 可选，每次调节的音量百分比）",
+        description = "调节媒体音量或静音（action: volume_up 调高 / volume_down 调低 / mute 静音 / unmute 取消静音；step 可选，仅 volume_up/volume_down 生效、每次调节的音量百分比）",
         schemaJson = """
             {
               "type": "object",
               "properties": {
-                "action": { "type": "string", "description": "音量调节方向：volume_up（调高）/ volume_down（调低）" },
-                "step": { "type": "integer", "description": "每次调节的音量百分比，默认 10，范围 1~100" }
+                "action": { "type": "string", "description": "音量操作：volume_up（调高）/ volume_down（调低）/ mute（静音）/ unmute（取消静音）" },
+                "step": { "type": "integer", "description": "每次调节的音量百分比，仅 volume_up/volume_down 生效，默认 10，范围 1~100" }
               },
               "required": ["action"]
             }

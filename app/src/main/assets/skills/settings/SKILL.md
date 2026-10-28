@@ -1,7 +1,7 @@
 ---
 name: settings
 version: 1.1.0
-description: 控制系统设置：打开指定的系统设置页面（wifi / display / sound / apps / storage），调节屏幕亮度（调亮 brighten / 调暗 dim）、调节媒体音量（调高 volume_up / 调低 volume_down）、开启或关闭深色模式（on / off），通过系统设置应用 com.android.settings 暴露的 AppFunction openSettingsPage / adjustBrightness / adjustMediaVolume / setDarkTheme 实现
+description: 控制系统设置：打开指定的系统设置页面（wifi / display / sound / apps / storage），调节屏幕亮度（调亮 brighten / 调暗 dim）、调节媒体音量（调高 volume_up / 调低 volume_down / 静音 mute / 取消静音 unmute）、开启或关闭深色模式（on / off），通过系统设置应用 com.android.settings 暴露的 AppFunction openSettingsPage / adjustBrightness / adjustMediaVolume / setDarkTheme 实现
 tags:
   - settings
   - system
@@ -15,8 +15,8 @@ inputs:
   page: 要打开的系统设置页 key：wifi（Wi-Fi 设置）/ display（显示）/ sound（声音）/ apps（应用管理）/ storage（存储）（打开设置页时必填）
   action: 亮度调节方向（必填）：brighten（调亮）/ dim（调暗），例如“把屏幕调亮一点”填 brighten、“把屏幕调暗一点”填 dim
   step: 亮度调节百分比（可选，默认 10，范围 1~100；例如 step=50 表示一次调亮/调暗 50%）
-  volume_action: 媒体音量调节方向（音量相关指令必填）：volume_up（调高）/ volume_down（调低），例如“把声音调大一点”填 volume_up、“把声音调小一点”填 volume_down
-  volume_step: 音量调节百分比（可选，默认 10，范围 1~100；例如 volume_step=30 表示一次调高/调低 30%）
+  volume_action: 媒体音量操作（音量相关指令必填）：volume_up（调高）/ volume_down（调低）/ mute（静音）/ unmute（取消静音），例如“把声音调大一点”填 volume_up、“把声音调小一点”填 volume_down、“静音”填 mute、“取消静音”填 unmute
+  volume_step: 音量调节百分比（可选，默认 10，范围 1~100；仅 volume_up / volume_down 生效，例如 volume_step=30 表示一次调高/调低 30%）
   dark_theme: 深色模式开关（深色模式相关指令必填）：on（开启深色模式）/ off（关闭深色模式），例如“打开深色模式”填 on、“关闭深色模式”填 off
 steps:
   - id: check_platform
@@ -41,7 +41,7 @@ steps:
   - id: adjust_volume
     type: function
     function: adjustMediaVolume
-    description: 跨应用调节媒体音量（volume_action 为 volume_up / volume_down 时执行）
+    description: 跨应用调节媒体音量或静音（volume_action 为 volume_up / volume_down / mute / unmute 时执行）
     run_when: '$input.volume_action != ""'
     inputs:
       action: "$input.volume_action"
@@ -71,7 +71,7 @@ steps:
    `OpenSettingsPageAppFunctionService` 暴露的 AppFunction：
    - `openSettingsPage`：打开指定设置页，参数 `page`；
    - `adjustBrightness`：调节屏幕亮度，参数 `action`（brighten/dim）+ 可选 `step`；
-   - `adjustMediaVolume`：调节媒体音量，参数 `action`（volume_up/volume_down）+ 可选 `step`；
+   - `adjustMediaVolume`：调节媒体音量 / 静音，参数 `action`（volume_up/volume_down/mute/unmute）+ 可选 `step`（仅调高/调低生效）；
    - `setDarkTheme`：开启/关闭深色模式，参数 `action`（on/off）。
 3. 汇总结果，形成可读的中文输出。
 

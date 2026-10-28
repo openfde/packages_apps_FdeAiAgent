@@ -94,6 +94,12 @@ class AppFunctionDispatcher(
             } else {
                 null
             }
+            // 媒体音量结果带调节后的静音状态（mute/unmute 后回传 muted 布尔）。
+            val muted = if (names.contains("muted")) {
+                runCatching { doc.getPropertyBoolean("muted") }.getOrNull()
+            } else {
+                null
+            }
             // openApp 结果带解析后的包名 / 应用名。
             val resolvedPackage = runCatching { doc.getPropertyString("packageName") }.getOrNull()
             val resolvedAppName = runCatching { doc.getPropertyString("appName") }.getOrNull()
@@ -122,6 +128,7 @@ class AppFunctionDispatcher(
                     if (status != null) append("，返回 status=$status") else append("（返回文档无 status 字段）")
                     if (before != null && after != null) append("，调整前 $before% → 调整后 $after%")
                     if (enabled != null) append("，深色模式=${if (enabled) "开启" else "关闭"}")
+                    if (muted != null) append("，静音=${if (muted) "是" else "否"}")
                     if (resolvedPackage != null) append("，应用包名=$resolvedPackage")
                     if (resolvedAppName != null) append("，应用名=$resolvedAppName")
                     if (resultPath != null) append("，路径=$resultPath")
