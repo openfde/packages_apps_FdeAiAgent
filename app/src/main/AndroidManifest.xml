@@ -12,6 +12,10 @@
     <uses-permission
         android:name="android.permission.EXECUTE_APP_FUNCTIONS" />
 
+    <!-- 语音输入：对着麦克风说话，识别成文字驱动智能体（RECORD_AUDIO 为运行时权限） -->
+    <uses-permission
+        android:name="android.permission.RECORD_AUDIO" />
+
     <application
         android:label="FDE AI Agent"
         android:allowBackup="false"

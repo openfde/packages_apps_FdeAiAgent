@@ -191,6 +191,34 @@ FdeAiAgent 侧消费方接入：
 - 结果文档 `FileOpResult` 统一解析：`status="ok"`，按 `path` / `newPath` / `movedCount` /
   `deletedCount` 拼进成功文案与用户反馈。
 
+### 2.6 语音输入（Voice Input）
+
+用户可点击麦克风按钮，对着麦克风说话，系统 SpeechRecognizer 把语音转写成文字后：
+
+- 自动填入「智能体指令（Prompt）」输入框（保留原文可先编辑）；
+- 勾选「识别后自动运行」时直接触发 `AgentCoordinator.runAgent`（与手动运行完全一致），
+  让语音可以驱动 Skill 引擎执行各种 skill 指令（打开应用/设置、文件操作、相册等）。
+
+中英文支持：
+
+- 语言下拉可选「自动检测（中/英）」/「中文（zh-CN）」/「English（en-US）」；
+- 自动模式下同时写入 `EXTRA_LANGUAGE_PREFERENCE=zh-CN`、`EXTRA_LANGUAGE=en-US` 与
+  `EXTRA_SUPPORTED_LANGUAGES=[zh-CN, en-US]`，交给识别器自动匹配语种；
+- 显式选择时只写 `EXTRA_LANGUAGE` / `EXTRA_LANGUAGE_PREFERENCE` 固定语种。
+
+实现要点（全部在 `MainActivity`，不新增业务层）：
+
+- 权限：`AndroidManifest.xml` 声明 `RECORD_AUDIO`（运行时权限），首次点麦克风时
+  `requestPermissions` 申请；`android:hardware.microphone` 非必需。
+- 识别器：懒加载单例 `SpeechRecognizer.createSpeechRecognizer(this)` +
+  `RecognitionListener`；`isRecognitionAvailable` 检测设备是否安装语音识别服务；
+  未安装 / 拒绝录音权限 / 各类 `ERROR_*` 都会转成可读提示显示在 `tvVoiceStatus`。
+- 交互：聆听中按钮变「⏹ 停止」，再次点击 `stopListening`；`onEndOfSpeech` 后自动取
+  `RESULTS_RECOGNITION` 第一条作为结果，语言选择与自动运行开关随 `saveSettings()` 持久化。
+
+> 说明：语音识别依赖设备预装的系统语音识别服务（`android.speech.RecognitionService`）。
+> 若目标镜像未预装该服务，`isRecognitionAvailable` 会返回 false 并提示用户，属于预期行为。
+
 ## 3. 一次「打开图片」的执行时序
 
 ```
