@@ -373,7 +373,7 @@
                     android:layout_weight="1"
                     android:background="@drawable/bg_btn_secondary"
                     android:stateListAnimator="@null"
-                    android:text="权限说明"
+                    android:text="功能说明"
                     android:textColor="@color/pc_text_regular"
                     android:textSize="12sp" />
 

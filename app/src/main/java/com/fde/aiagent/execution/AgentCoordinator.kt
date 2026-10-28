@@ -247,6 +247,47 @@ class AgentCoordinator(context: Context) {
         }
     }
 
-    /** 「权限说明」按钮：返回权限摘要。 */
-    fun permissionSummary(): String = guard.describe()
+    /**
+     * 「功能说明」按钮：返回本智能体已有的功能总览与使用方法，展示在运行日志面板。
+     */
+    fun featureSummary(): String = buildString {
+        appendLine("===== 功能说明 =====")
+        appendLine()
+        appendLine("本智能体 = AI 理解/规划 ＋ Skill 编排 ＋ 跨应用 AppFunction 执行。")
+        appendLine("所选 AI 供应商负责理解指令并规划动作，Skill 编排多步骤流程，")
+        appendLine("AppFunction 调用相册/设置/文件管理器等应用暴露的真实能力。")
+        appendLine()
+        appendLine("【使用步骤】")
+        appendLine("1. 左上角选择 AI 供应商并填写 API Key（在各平台申请），模型可留空用默认；")
+        appendLine("2. 在「智能体指令」框输入自然语言指令，点击「运行智能体」；")
+        appendLine("3. 也可点击 🎤 语音输入，识别后勾选「识别后自动运行」便直接执行；")
+        appendLine("4. 中栏 SVG 面板实时展示执行流程，右栏运行日志输出每一步的结果。")
+        appendLine()
+        appendLine("【可用功能与示例指令】")
+        appendLine("□ 相册媒体（gallery）：打开图片、播放视频、给图片加滤镜另存")
+        appendLine("  例：打开 /sdcard/Download/bella.jpg")
+        appendLine("  例：播放 /sdcard/Movies/clip.mp4")
+        appendLine("  例：把 /sdcard/Download/a.jpg 加黑白滤镜另存")
+        appendLine("□ 系统设置（settings）：打开设置页、调节亮度/音量/静音、深色模式")
+        appendLine("  例：打开 Wi-Fi 设置 / 打开显示设置 / 打开应用设置")
+        appendLine("  例：把屏幕调亮一点（dim 调暗）")
+        appendLine("  例：把声音调大 50%（volume_down 调小）")
+        appendLine("  例：静音 / 取消静音 / 打开深色模式 / 关闭深色模式")
+        appendLine("□ 打开应用（app_open）：按包名或应用名打开任意应用")
+        appendLine("  例：打开设置 / 打开相册 / 打开 com.android.settings")
+        appendLine("□ 文件管理（file_op）：删除（移入回收站）、移动、重命名、清空回收站")
+        appendLine("  例：删除 桌面/a.txt")
+        appendLine("  例：把 桌面/临时 里的文件移到 桌面/归档")
+        appendLine("  例：把 报告.txt 改名为 报告2026.txt")
+        appendLine("  例：清空回收站")
+        appendLine("□ 文件搜索（file_search）：按后缀/关键字在目录中搜索文件")
+        appendLine("  例：在 /mnt/sdcard/Pictures 里找 *.png")
+        appendLine("□ 任务记录（task_create）：把文本写入文件并回读校验")
+        appendLine("  例：把“写周报”记录到 /data/local/tmp/task.txt")
+        appendLine()
+        appendLine("【界面快捷入口】")
+        appendLine("· 「打开相册」按钮：直接打开图片（先填好图片路径）；")
+        appendLine("· 「打开设置页」下拉 + 按钮：直接打开选定的设置页；")
+        appendLine("· 「清空日志」：清空右栏运行日志并重置 SVG 状态面板。")
+    }
 }

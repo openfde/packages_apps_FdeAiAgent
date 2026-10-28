@@ -217,7 +217,7 @@ class MainActivity : Activity(), ExecutionListener {
             coordinator.openSettingsPage(page)
         }
         findViewById<Button>(R.id.btnGrantFunctionPermission).setOnClickListener {
-            appendLog(coordinator.permissionSummary())
+            appendLog(coordinator.featureSummary())
         }
         findViewById<Button>(R.id.btnClearLog).setOnClickListener {
             tvLog.setText("等待运行…")

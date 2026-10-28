@@ -67,7 +67,7 @@ class PermissionGuard(private val context: Context) {
         return null
     }
 
-    /** 供「权限说明」按钮使用的摘要。 */
+    /** 当前权限状态的摘要（调试/提示用）。 */
     fun describe(): String {
         val sb = StringBuilder()
         sb.append("AppFunctions 支持: ").append(isAppFunctionsSupported()).append('\n')
