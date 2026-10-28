@@ -70,13 +70,30 @@ class AppFunctionDispatcher(
             //  - 设置 SettingsPageResult：成功 ok=true、status="launch_requested"；
             //    失败 ok=false、error="unsupported_page" 等；
             //  - 设置 BrightnessAdjustResult：成功 ok=true、status="brightness_adjusted"、
-            //    带 action/before/after；失败 ok=false、error="invalid_action" 等。
+            //    带 action/before/after；失败 ok=false、error="invalid_action" 等；
+            //  - 设置 MediaVolumeResult：成功 status="media_volume_adjusted"，带 before/after
+            //    （百分比）；失败 ok=false、error="invalid_action" 等；
+            //  - 设置 DarkThemeResult：成功 status="dark_theme_set"，带 action/enabled；
+            //  - 设置 OpenAppResult：成功 status="launch_requested"，带解析出的 packageName/
+            //    appName。
             // 这里统一解析，把设置侧的业务失败也归为 Failure 反馈给用户/模型。
             val doc = response.resultDocument
             val names = runCatching { doc.propertyNames }.getOrNull() ?: emptySet()
             val status = runCatching { doc.getPropertyString("status") }.getOrNull()
             // 结果文档可能携带业务输出（如 editImage 的 outputPath），一并展示给用户。
             val outputPath = runCatching { doc.getPropertyString("outputPath") }.getOrNull()
+            // 调节型结果（亮度/音量）带调整前后百分比（Long）。
+            val before = runCatching { doc.getPropertyLong("before") }.getOrNull()
+            val after = runCatching { doc.getPropertyLong("after") }.getOrNull()
+            // 深色主题结果带最终开关状态（getPropertyBoolean 在属性缺失时返回 false，需先判存在）。
+            val enabled = if (names.contains("enabled")) {
+                runCatching { doc.getPropertyBoolean("enabled") }.getOrNull()
+            } else {
+                null
+            }
+            // openApp 结果带解析后的包名 / 应用名。
+            val resolvedPackage = runCatching { doc.getPropertyString("packageName") }.getOrNull()
+            val resolvedAppName = runCatching { doc.getPropertyString("appName") }.getOrNull()
             // getPropertyBoolean 在属性缺失时返回 false，必须先判断属性是否存在。
             val hasOkProp = names.contains("ok")
             val ok = if (hasOkProp) runCatching { doc.getPropertyBoolean("ok") }.getOrNull() else null
@@ -91,9 +108,15 @@ class AppFunctionDispatcher(
             }
 
             FunctionResult.Success(
-                displayText = "已调用 ${fn.packageName}#${fn.id}（${fn.serviceName}）" +
-                    (status?.let { "，返回 status=$it" } ?: "（返回文档无 status 字段）") +
-                    (outputPath?.takeIf { it.isNotEmpty() }?.let { "，输出: $it" } ?: ""),
+                displayText = buildString {
+                    append("已调用 ${fn.packageName}#${fn.id}（${fn.serviceName}）")
+                    if (status != null) append("，返回 status=$status") else append("（返回文档无 status 字段）")
+                    if (before != null && after != null) append("，调整前 $before% → 调整后 $after%")
+                    if (enabled != null) append("，深色模式=${if (enabled) "开启" else "关闭"}")
+                    if (resolvedPackage != null) append("，应用包名=$resolvedPackage")
+                    if (resolvedAppName != null) append("，应用名=$resolvedAppName")
+                    outputPath?.takeIf { it.isNotEmpty() }?.let { append("，输出: $it") }
+                },
                 raw = status ?: "ok",
             )
         } catch (t: Throwable) {

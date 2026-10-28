@@ -3,10 +3,12 @@ package com.fde.aiagent.appfunctions
 /**
  * AppFunction 目录 —— 集中登记本智能体可以调用的所有 AppFunction。
  *
- * 目前有两类能力：
+ * 目前有此能力：
  *  - 相册 `com.fde.gallery3d` 对外暴露的媒体能力（openImage / playVideo / editImage）；
- *  - 系统设置 `com.android.settings` 对外开放的「设置控制」能力：openSettingsPage
- *    （打开设置页）与 adjustBrightness（调节屏幕亮度）。
+ *  - 系统设置 `com.android.settings` 对外暴露的「设置控制 / 应用启动」能力：
+ *    openSettingsPage（打开设置页）、adjustBrightness（调节屏幕亮度）、
+ *    adjustMediaVolume（调节媒体音量）、setDarkTheme（开启/关闭深色主题）、
+ *    openApp（按包名/应用名打开应用）。
  *
  * 新增能力时只需在这里加一条 [AppFunction]，Skill / AI 客户端 / 分发器无需改动。
  */
@@ -24,6 +26,9 @@ object AppFunctionCatalog {
     const val FUNC_EDIT_IMAGE = "editImage"
     const val FUNC_OPEN_SETTINGS_PAGE = "openSettingsPage"
     const val FUNC_ADJUST_BRIGHTNESS = "adjustBrightness"
+    const val FUNC_ADJUST_MEDIA_VOLUME = "adjustMediaVolume"
+    const val FUNC_SET_DARK_THEME = "setDarkTheme"
+    const val FUNC_OPEN_APP = "openApp"
 
     /** 在相册中打开指定绝对路径的图片预览。 */
     val OPEN_IMAGE = AppFunction(
@@ -129,8 +134,85 @@ object AppFunctionCatalog {
         requiredParams = listOf("action"),
     )
 
+    /**
+     * 调节媒体音量（参数 action：volume_up 调高 / volume_down 调低；step 每次调节的音量百分比，
+     * 可选、默认 10、范围 1~100，映射到媒体音量的分档范围 [min, max]，settings 侧通过
+     * getPropertyLongArray 读取 step，因此分发时 step 用 Long 属性下发，通过
+     * AudioManager#setStreamVolume 写回）。返回结果带 before / after 百分比。
+     * 功能定义见 Settings 的 fdesettings_appfunctions.xml 与
+     * OpenSettingsPageAppFunctionService.adjustMediaVolume。
+     */
+    val ADJUST_MEDIA_VOLUME = AppFunction(
+        id = FUNC_ADJUST_MEDIA_VOLUME,
+        packageName = SETTINGS_PACKAGE,
+        serviceName = SETTINGS_SERVICE,
+        description = "调节媒体音量（action: volume_up 调高 / volume_down 调低；step 可选，每次调节的音量百分比）",
+        schemaJson = """
+            {
+              "type": "object",
+              "properties": {
+                "action": { "type": "string", "description": "音量调节方向：volume_up（调高）/ volume_down（调低）" },
+                "step": { "type": "integer", "description": "每次调节的音量百分比，默认 10，范围 1~100" }
+              },
+              "required": ["action"]
+            }
+        """.trimIndent(),
+        requiredParams = listOf("action"),
+    )
+
+    /**
+     * 开启 / 关闭深色主题（参数 action：on 开启 / off 关闭），通过
+     * UiModeManager#setNightModeActivated(boolean) 切换，行为与
+     * DarkModeActivationPreferenceController 一致。返回结果带 action / enabled。
+     * 功能定义见 Settings 的 fdesettings_appfunctions.xml 与
+     * OpenSettingsPageAppFunctionService.setDarkTheme。
+     */
+    val SET_DARK_THEME = AppFunction(
+        id = FUNC_SET_DARK_THEME,
+        packageName = SETTINGS_PACKAGE,
+        serviceName = SETTINGS_SERVICE,
+        description = "开启/关闭深色主题（action: on 开启深色模式 / off 关闭深色模式）",
+        schemaJson = """
+            {
+              "type": "object",
+              "properties": {
+                "action": { "type": "string", "description": "深色主题开关：on（开启）/ off（关闭）" }
+              },
+              "required": ["action"]
+            }
+        """.trimIndent(),
+        requiredParams = listOf("action"),
+    )
+
+    /**
+     * 按包名或应用名打开某个应用（packageName 或 appName 至少提供一个，同时提供时以 packageName
+     * 优先）：packageName 直接 getLaunchIntentForPackage；appName 对所有可启动应用做忽略大小写的
+     * 精确 / 包含匹配，命中唯一应用后启动。成功后返回结果带解析出的 packageName / appName。
+     * 功能定义见 Settings 的 fdesettings_appfunctions.xml 与
+     * OpenSettingsPageAppFunctionService.openApp。
+     */
+    val OPEN_APP = AppFunction(
+        id = FUNC_OPEN_APP,
+        packageName = SETTINGS_PACKAGE,
+        serviceName = SETTINGS_SERVICE,
+        description = "按包名或应用名打开某个应用（packageName 或 appName，至少提供一个，同时提供时以 packageName 优先）",
+        schemaJson = """
+            {
+              "type": "object",
+              "properties": {
+                "packageName": { "type": "string", "description": "要打开应用的包名，例如 com.android.settings" },
+                "appName": { "type": "string", "description": "要打开应用的名称（label），例如“设置”或“相册”，按应用名匹配" }
+              },
+              "required": []
+            }
+        """.trimIndent(),
+        requiredParams = listOf(),
+    )
+
     val ALL: List<AppFunction> = listOf(
-        OPEN_IMAGE, PLAY_VIDEO, EDIT_IMAGE, OPEN_SETTINGS_PAGE, ADJUST_BRIGHTNESS,
+        OPEN_IMAGE, PLAY_VIDEO, EDIT_IMAGE,
+        OPEN_SETTINGS_PAGE, ADJUST_BRIGHTNESS,
+        ADJUST_MEDIA_VOLUME, SET_DARK_THEME, OPEN_APP,
     )
 
     private val byId: Map<String, AppFunction> = ALL.associateBy { it.id }

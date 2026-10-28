@@ -151,6 +151,30 @@ class AgentCoordinator(context: Context) {
             },
         )
 
+    /** 调节媒体音量：跨应用调用 Settings 的 adjustMediaVolume（action: volume_up/volume_down，step 可选）。 */
+    fun adjustMediaVolume(action: String, step: String? = null) =
+        directFunction(
+            AppFunctionCatalog.FUNC_ADJUST_MEDIA_VOLUME,
+            buildMap {
+                put("action", action)
+                step?.takeIf { it.isNotBlank() }?.let { put("step", it) }
+            },
+        )
+
+    /** 开启/关闭深色主题：跨应用调用 Settings 的 setDarkTheme（action: on/off）。 */
+    fun setDarkTheme(action: String) =
+        directFunction(AppFunctionCatalog.FUNC_SET_DARK_THEME, mapOf("action" to action))
+
+    /** 按包名或应用名打开应用：跨应用调用 Settings 的 openApp（packageName / appName 至少一个）。 */
+    fun openApp(packageName: String? = null, appName: String? = null) =
+        directFunction(
+            AppFunctionCatalog.FUNC_OPEN_APP,
+            buildMap {
+                packageName?.takeIf { it.isNotBlank() }?.let { put("packageName", it) }
+                appName?.takeIf { it.isNotBlank() }?.let { put("appName", it) }
+            },
+        )
+
     private fun directFunction(functionId: String, params: Map<String, String>) {
         if (!running.compareAndSet(false, true)) {
             emit(AgentEvent.Logged("已有任务正在执行，请等待完成。"))

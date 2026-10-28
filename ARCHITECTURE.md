@@ -25,7 +25,8 @@ app/src/main/
 ├── assets/skills/
 │   ├── gallery/SKILL.md         # 相册媒体操作：打开图片/播放视频/图片滤镜编辑（openImage/playVideo/editImage，含权限检查）
 │   ├── file_search/SKILL.md      # 目录内按规则搜索文件（内置工具）
-│   ├── settings/SKILL.md        # 系统设置控制：打开设置页 wifi/display/sound/apps/storage（openSettingsPage）+ 调节屏幕亮度（adjustBrightness）
+│   ├── settings/SKILL.md        # 系统设置控制：打开设置页 wifi/display/sound/apps/storage（openSettingsPage）+ 调节屏幕亮度（adjustBrightness）+ 调节媒体音量（adjustMediaVolume）+ 开启/关闭深色模式（setDarkTheme）
+│   ├── app_open/SKILL.md        # 打开应用：按包名或应用名打开（openApp，经 Settings 的 OpenSettingsPageAppFunctionService）
 │   └── task_create/SKILL.md      # 写入任务文件并回读校验（演示权限守卫 + 引用链）
 └── java/com/fde/aiagent/
     ├── MainActivity.kt              # 纯 UI：选择供应商/填 key、订阅事件、驱动 SVG/日志/错误提示
@@ -68,32 +69,60 @@ app/src/main/
 新增一家 OpenAI 兼容的供应商只需在 `AiProvider.kt` 枚举里加一项；非兼容协议（如 Gemini）
 需在 `AiClient.kt` 中增加对应的请求 / 解析分支（已内置 Gemini，可直接参照扩展）。
 
-### 2.2 系统设置控制（settings：openSettingsPage / adjustBrightness）
+### 2.2 系统设置控制（settings：openSettingsPage / adjustBrightness / adjustMediaVolume / setDarkTheme）
 
 系统设置应用 `com.android.settings` 通过 `OpenSettingsPageAppFunctionService`
-（`assets/fdesettings_appfunctions.xml` 声明，见 Settings 源码）对外开放两个 AppFunction：
+（`assets/fdesettings_appfunctions.xml` 声明，见 Settings 源码）对外开放五个 AppFunction：
 
 - `openSettingsPage`：打开指定设置页，参数 `page` 取值与 FdeSystemControl 的
   `SystemControlService.openSettingsPage` 保持一致：`wifi` / `display` / `sound` / `apps` / `storage`。
 - `adjustBrightness`：调节屏幕亮度，参数 `action`（`brighten` 调亮 / `dim` 调暗）必填，
   `step` 可选（每次调节的亮度百分比，默认 10，范围 1~100）。亮度换算逻辑与
-  `src/com/android/settings/display/BrightnessLevelPreference.kt` 一致；`step` 在 settings
-  侧通过 `getPropertyLongArray` 读取，因此分发器会把数字参数以 Long 属性下发。
-  命令行等价用法：
-  ```
-  cmd app_function execute-app-function --brief-yaml \
-    --package com.android.settings --function 'adjustBrightness' \
-    --parameters '{"action":"brighten","step":50}'
-  ```
+  `src/com/android/settings/display/BrightnessLevelPreference.kt` 一致。
+- `adjustMediaVolume`：调节媒体音量，参数 `action`（`volume_up` 调高 / `volume_down` 调低）
+  必填，`step` 可选（每次调节的音量百分比，默认 10，范围 1~100），映射到媒体音量
+  `[getStreamMinVolume, getStreamMaxVolume]` 分档范围，通过 `AudioManager#setStreamVolume` 写回。
+- `setDarkTheme`：开启/关闭深色模式，参数 `action`（`on` 开启 / `off` 关闭）必填，通过
+  `UiModeManager#setNightModeActivated` 切换，行为与 `DarkModeActivationPreferenceController` 一致。
+- `openApp`：按包名或应用名打开某个应用。参数 `packageName`（可选）或 `appName`（可选），
+  至少提供一个，同时提供时以 `packageName` 优先：`packageName` 直接走
+  `getLaunchIntentForPackage`；`appName` 对所有可启动应用做忽略大小写的精确/包含匹配，
+  命中唯一应用后打开。
+
+其中 `adjustBrightness` / `adjustMediaVolume` 结果带 `before` / `after` 百分比，
+`setDarkTheme` 带 `enabled`，`openApp` 带解析后的 `packageName` / `appName`；分发器
+会把它们拼进成功文案返回。注意：`openApp` 属于「apps」类别，FdeAiAgent 侧单独建模为
+`app_open` Skill（见 2.4），避免与设置控制混淆。
+
+命令行等价用法：
+```
+cmd app_function execute-app-function --brief-yaml \
+  --package com.android.settings --function 'adjustBrightness' \
+  --parameters '{"action":"brighten","step":50}'
+
+cmd app_function execute-app-function --brief-yaml \
+  --package com.android.settings --function 'adjustMediaVolume' \
+  --parameters '{"action":"volume_down","step":"0"}'
+
+cmd app_function execute-app-function --brief-yaml \
+  --package com.android.settings --function 'setDarkTheme' \
+  --parameters '{"action":"off"}'
+
+cmd app_function execute-app-function --brief-yaml \
+  --package com.android.settings --function 'openApp' \
+  --parameters '{"packageName":"com.android.settings"}'
+```
 
 FdeAiAgent 侧只需做消费方接入：
 
-- `AppFunctionCatalog` 增加 `OPEN_SETTINGS_PAGE` / `ADJUST_BRIGHTNESS` 目录项（包名 /
-  服务名 / 参数 schema）；
+- `AppFunctionCatalog` 增加 `OPEN_SETTINGS_PAGE` / `ADJUST_BRIGHTNESS` /
+  `ADJUST_MEDIA_VOLUME` / `SET_DARK_THEME` / `OPEN_APP` 目录项（包名 / 服务名 / 参数 schema）；
 - 合并为单个 Skill `settings`（`assets/skills/settings/SKILL.md`），使 AI 能规划
-  「打开 WiFi 设置」「把屏幕调亮一点」「把屏幕调暗一点」这类指令；
+  「打开 WiFi 设置」「把屏幕调亮一点」「把声音调大一点」「打开深色模式」这类指令；
+  `openApp` 单独建模为 Skill `app_open`（`assets/skills/app_open/SKILL.md`）；
 - 结果文档按 `ok` / `status` / `error` 解析：`ok=false, error="unsupported_page"` /
-  `error="invalid_action"` 等会被 `AppFunctionDispatcher` 识别为失败并反馈给用户。
+  `error="invalid_action"` / `error="app_not_found"` 等会被 `AppFunctionDispatcher`
+  识别为失败并反馈给用户。
 
 ### 2.3 相册媒体操作（gallery：openImage / playVideo / editImage）
 
@@ -113,6 +142,21 @@ FdeAiAgent 侧消费方接入：
 - 合并为单个 Skill `gallery`（`assets/skills/gallery/SKILL.md`），使 AI 能规划
   「打开这张图片」「播放这个视频」「给这张图加黑白滤镜另存」这类指令；
 - 结果文档统一解析：`editImage` 成功时带 `outputPath`，分发器会把它拼进成功文案返回。
+
+### 2.4 打开应用（app_open：openApp）
+
+打开应用能力同样由系统设置应用 `com.android.settings` 的
+`OpenSettingsPageAppFunctionService` 对外暴露（`openApp`，category 为 `apps`），
+参数 `packageName` 或 `appName` 至少提供一个、同时提供时以 `packageName` 优先：
+包名直接走 `getLaunchIntentForPackage`；应用名对所有可启动应用做忽略大小写的精确 /
+包含匹配，命中唯一应用后打开。
+
+FdeAiAgent 侧消费方接入：
+
+- `AppFunctionCatalog` 增加 `OPEN_APP` 目录项；
+- 单独建模为 Skill `app_open`（`assets/skills/app_open/SKILL.md`），使 AI 能规划
+  「打开设置」「打开相册」这类指令（与 `settings` Skill 区分开，避免模型混淆）；
+- 结果文档 `OpenAppResult` 带解析后的 `packageName` / `appName`，分发器会拼进成功文案。
 
 ## 3. 一次「打开图片」的执行时序
 
