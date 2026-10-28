@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- ===================================================================
-     FDE AI Agent — 五层架构界面
-     顶栏 + 三栏布局：
+     FDE AI Agent — 五层架构界面（三栏布局）
        左栏 「智能体配置」
        中栏 「执行流程 SVG 状态面板」（WebView 渲染 SVG）+ 错误提示条
        右栏 「运行日志」控制台
+     所有文案均来自 @string/…，自动适配中英文与深色模式（values-night）。
      =================================================================== -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
@@ -34,7 +34,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="12dp"
-            android:text="FDE AI Agent"
+            android:text="@string/app_name"
             android:textColor="@color/pc_text_primary"
             android:textSize="17sp"
             android:textStyle="bold" />
@@ -43,7 +43,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="12dp"
-            android:text="AI × Skill × AppFunctions"
+            android:text="@string/tv_subtitle"
             android:textColor="@color/pc_text_secondary"
             android:textSize="12sp" />
 
@@ -60,10 +60,10 @@
             android:gravity="center"
             android:paddingStart="14dp"
             android:paddingEnd="14dp"
-            android:text="就绪"
+            android:text="@string/status_ready"
             android:textColor="@color/pc_primary"
             android:textSize="12sp"
-            tools:text="就绪" />
+            tools:text="@string/status_ready" />
     </LinearLayout>
 
     <View
@@ -90,7 +90,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="智能体配置"
+                android:text="@string/section_agent_config"
                 android:textAppearance="@style/TextAppearance.PcSectionTitle" />
 
             <View
@@ -103,7 +103,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="AI 供应商（Provider）"
+                android:text="@string/label_provider"
                 android:textAppearance="@style/TextAppearance.PcLabel" />
 
             <Spinner
@@ -120,7 +120,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
-                android:text="API Key（在各平台申请）"
+                android:text="@string/label_api_key"
                 android:textAppearance="@style/TextAppearance.PcLabel" />
 
             <EditText
@@ -129,20 +129,21 @@
                 android:layout_height="40dp"
                 android:layout_marginTop="6dp"
                 android:background="@drawable/bg_input"
-                android:hint="sk-... 或 key-..."
+                android:hint="@string/hint_api_key"
                 android:importantForAutofill="no"
                 android:inputType="textPassword"
                 android:paddingStart="12dp"
                 android:paddingEnd="12dp"
                 android:singleLine="true"
                 android:textColor="@color/pc_text_primary"
+                android:textColorHint="@color/pc_text_secondary"
                 android:textSize="13sp" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="14dp"
-                android:text="模型（Model，留空用默认）"
+                android:text="@string/label_model"
                 android:textAppearance="@style/TextAppearance.PcLabel" />
 
             <EditText
@@ -151,12 +152,13 @@
                 android:layout_height="40dp"
                 android:layout_marginTop="6dp"
                 android:background="@drawable/bg_input"
-                android:hint="deepseek-chat / qwen-plus / glm-4-plus / gemini-2.5-flash ..."
+                android:hint="@string/hint_model"
                 android:inputType="text"
                 android:paddingStart="12dp"
                 android:paddingEnd="12dp"
                 android:singleLine="true"
                 android:textColor="@color/pc_text_primary"
+                android:textColorHint="@color/pc_text_secondary"
                 android:textSize="13sp" />
 
             <TextView
@@ -164,7 +166,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="14dp"
-                android:text="Base URL（选择“自定义”时必填）"
+                android:text="@string/label_base_url"
                 android:textAppearance="@style/TextAppearance.PcLabel"
                 android:visibility="gone" />
 
@@ -174,13 +176,14 @@
                 android:layout_height="40dp"
                 android:layout_marginTop="6dp"
                 android:background="@drawable/bg_input"
-                android:hint="https://example.com/v1/chat/completions"
+                android:hint="@string/hint_base_url"
                 android:importantForAutofill="no"
                 android:inputType="textUri"
                 android:paddingStart="12dp"
                 android:paddingEnd="12dp"
                 android:singleLine="true"
                 android:textColor="@color/pc_text_primary"
+                android:textColorHint="@color/pc_text_secondary"
                 android:textSize="13sp"
                 android:visibility="gone" />
 
@@ -189,7 +192,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="14dp"
                 android:visibility="gone" 
-                android:text="图片路径（openImage）"
+                android:text="@string/label_image_path"
                 android:textAppearance="@style/TextAppearance.PcLabel" />
 
             <EditText
@@ -198,13 +201,14 @@
                 android:layout_height="40dp"
                 android:layout_marginTop="6dp"
                 android:background="@drawable/bg_input"
-                android:hint="/mnt/sdcard/Pictures/aa.png"
+                android:hint="@string/hint_image_path"
                 android:inputType="text"
                 android:paddingStart="12dp"
                 android:paddingEnd="12dp"
                 android:visibility="gone" 
                 android:singleLine="true"
                 android:textColor="@color/pc_text_primary"
+                android:textColorHint="@color/pc_text_secondary"
                 android:textSize="13sp" />
 
             <TextView
@@ -212,7 +216,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="14dp"
                 android:visibility="gone" 
-                android:text="视频路径（playVideo，可选）"
+                android:text="@string/label_video_path"
                 android:textAppearance="@style/TextAppearance.PcLabel" />
 
             <EditText
@@ -221,20 +225,21 @@
                 android:layout_height="40dp"
                 android:layout_marginTop="6dp"
                 android:background="@drawable/bg_input"
-                android:hint="/mnt/sdcard/Movies/clip.mp4"
+                android:hint="@string/hint_video_path"
                 android:inputType="text"
                 android:paddingStart="12dp"
                 android:paddingEnd="12dp"
                 android:visibility="gone" 
                 android:singleLine="true"
                 android:textColor="@color/pc_text_primary"
+                android:textColorHint="@color/pc_text_secondary"
                 android:textSize="13sp" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="14dp"
-                android:text="智能体指令（Prompt）"
+                android:text="@string/label_agent_prompt"
                 android:textAppearance="@style/TextAppearance.PcLabel" />
 
             <EditText
@@ -244,20 +249,21 @@
                 android:layout_marginTop="6dp"
                 android:background="@drawable/bg_input"
                 android:gravity="top|start"
-                android:hint="例如：帮我打开这张图片"
+                android:hint="@string/hint_agent_prompt"
                 android:inputType="textMultiLine|textCapSentences"
                 android:paddingStart="12dp"
                 android:paddingTop="8dp"
                 android:paddingEnd="12dp"
                 android:paddingBottom="8dp"
                 android:textColor="@color/pc_text_primary"
+                android:textColorHint="@color/pc_text_secondary"
                 android:textSize="13sp" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
-                android:text="语音输入（对着麦克风说话即可）"
+                android:text="@string/label_voice_input"
                 android:textAppearance="@style/TextAppearance.PcLabel" />
 
             <LinearLayout
@@ -283,7 +289,7 @@
                     android:layout_marginStart="8dp"
                     android:background="@drawable/bg_btn_primary"
                     android:stateListAnimator="@null"
-                    android:text="🎤 语音输入"
+                    android:text="@string/btn_voice_input"
                     android:textColor="#FFFFFF"
                     android:textSize="13sp"
                     android:textStyle="bold" />
@@ -301,7 +307,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:checked="false"
-                    android:text="识别后自动运行"
+                    android:text="@string/chk_auto_run"
                     android:textColor="@color/pc_text_regular"
                     android:textSize="12sp" />
 
@@ -313,7 +319,7 @@
                     android:ellipsize="end"
                     android:gravity="end|center_vertical"
                     android:maxLines="1"
-                    android:text="点击🎤开始语音输入"
+                    android:text="@string/voice_status_default"
                     android:textColor="@color/pc_text_secondary"
                     android:textSize="11sp" />
             </LinearLayout>
@@ -322,7 +328,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
-                android:text="可用 Skill：gallery / file_search / file_op / settings / app_open / task_create"
+                android:text="@string/available_skills"
                 android:textColor="@color/pc_text_secondary"
                 android:textSize="11sp" />
 
@@ -343,7 +349,7 @@
                 android:layout_height="44dp"
                 android:background="@drawable/bg_btn_primary"
                 android:stateListAnimator="@null"
-                android:text="运行智能体"
+                android:text="@string/btn_run_agent"
                 android:textColor="#FFFFFF"
                 android:textSize="15sp"
                 android:textStyle="bold" />
@@ -361,7 +367,7 @@
                     android:layout_weight="1"
                     android:background="@drawable/bg_btn_secondary"
                     android:stateListAnimator="@null"
-                    android:text="打开相册"
+                    android:text="@string/btn_open_gallery"
                     android:textColor="@color/pc_text_regular"
                     android:textSize="12sp" />
 
@@ -373,7 +379,7 @@
                     android:layout_weight="1"
                     android:background="@drawable/bg_btn_secondary"
                     android:stateListAnimator="@null"
-                    android:text="功能说明"
+                    android:text="@string/btn_feature_desc"
                     android:textColor="@color/pc_text_regular"
                     android:textSize="12sp" />
 
@@ -385,7 +391,7 @@
                     android:layout_weight="1"
                     android:background="@drawable/bg_btn_secondary"
                     android:stateListAnimator="@null"
-                    android:text="清空日志"
+                    android:text="@string/btn_clear_log"
                     android:textColor="@color/pc_text_regular"
                     android:textSize="12sp" />
             </LinearLayout>
@@ -415,7 +421,7 @@
                     android:layout_weight="1"
                     android:background="@drawable/bg_btn_secondary"
                     android:stateListAnimator="@null"
-                    android:text="打开设置页"
+                    android:text="@string/btn_open_settings"
                     android:textColor="@color/pc_text_regular"
                     android:textSize="12sp" />
             </LinearLayout>
@@ -443,7 +449,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="执行流程 · SVG 状态面板"
+                    android:text="@string/section_exec_flow"
                     android:textAppearance="@style/TextAppearance.PcSectionTitle" />
 
                 <View
@@ -454,7 +460,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="由统一执行事件实时更新"
+                    android:text="@string/flow_subtitle"
                     android:textColor="@color/pc_text_secondary"
                     android:textSize="11sp" />
             </LinearLayout>
@@ -484,10 +490,10 @@
                 android:paddingTop="8dp"
                 android:paddingEnd="12dp"
                 android:paddingBottom="8dp"
-                android:textColor="#E64848"
+                android:textColor="@color/pc_error_text"
                 android:textSize="12sp"
                 android:visibility="gone"
-                tools:text="错误提示示例"
+                tools:text="@string/error_banner_sample"
                 tools:visibility="visible" />
         </LinearLayout>
 
@@ -513,7 +519,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="运行日志"
+                    android:text="@string/section_log"
                     android:textAppearance="@style/TextAppearance.PcSectionTitle" />
 
                 <View
@@ -526,7 +532,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:fontFamily="monospace"
-                    android:text="model: -"
+                    android:text="@string/model_info_default"
                     android:textColor="@color/pc_text_secondary"
                     android:textSize="11sp" />
             </LinearLayout>
@@ -554,9 +560,11 @@
                     android:id="@+id/tvAgentLog"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:breakStrategy="simple"
                     android:fontFamily="monospace"
                     android:lineSpacingExtra="3dp"
-                    android:text="等待运行…"
+                    android:scrollHorizontally="false"
+                    android:text="@string/log_waiting"
                     android:textColor="@color/pc_console_text"
                     android:textIsSelectable="true"
                     android:textSize="13sp" />

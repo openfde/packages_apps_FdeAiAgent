@@ -1,5 +1,7 @@
 package com.fde.aiagent.ai
 
+import android.content.Context
+import com.fde.aiagent.R
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
@@ -44,8 +46,11 @@ sealed interface ModelPlan {
 class AiClient(
     /** 用户选择的供应商 / key / 模型 等配置。 */
     private val cfg: AiConfig,
+    /** 用于读取本地化资源（提示词 / 错误信息 / 运行日志）。 */
+    private val context: Context,
     private val log: (String) -> Unit = {},
 ) {
+    private val appContext = context.applicationContext
 
     companion object {
         /** 规划阶段暴露给模型的唯一工具。 */
@@ -66,7 +71,7 @@ class AiClient(
      */
     suspend fun plan(prompt: String, skills: List<SkillBrief>): ModelPlan {
         if (cfg.apiKey.isBlank()) {
-            throw IllegalStateException("未配置 API Key，请先在界面上选择供应商并填写 key。")
+            throw IllegalStateException(appContext.getString(R.string.ai_no_api_key))
         }
 
         val provider = cfg.provider()
@@ -86,10 +91,10 @@ class AiClient(
         val url = cfg.resolvedBaseUrl()
         val model = cfg.resolvedModel()
         val messages = arrayListOf(message("system", system), message("user", prompt))
-        log("→ POST $url (provider=${cfg.provider().id}, model=$model)")
+        log(appContext.getString(R.string.ai_post_log, url, cfg.provider().id, model))
         val completion = completeOpenAi(url, model, messages, listOf(toolDef))
         val choice = completion.getAsJsonArray("choices")?.asSequence()?.firstOrNull()?.asJsonObject
-            ?: throw IllegalStateException("模型没有返回任何 choice。")
+            ?: throw IllegalStateException(appContext.getString(R.string.ai_no_choice))
         return parseOpenAiChoice(choice)
     }
 
@@ -99,7 +104,7 @@ class AiClient(
         val toolCalls = msg.get("tool_calls")?.takeIf { it.isJsonArray }?.asJsonArray
 
         if (toolCalls == null || toolCalls.size() == 0) {
-            log("← 模型直接回答（不调用 Skill）")
+            log(appContext.getString(R.string.ai_direct_answer))
             return ModelPlan.Answer(content ?: "")
         }
 
@@ -111,11 +116,11 @@ class AiClient(
                 val args = runCatching { JsonParser.parseString(argsRaw).asJsonObject }.getOrNull()
                     ?: JsonObject()
                 return runSkillFromArgs(args)
-                    ?: throw IllegalStateException("模型返回的 $TOOL_RUN_SKILL 缺少 skill 参数。")
+                    ?: throw IllegalStateException(appContext.getString(R.string.ai_missing_skill_param, TOOL_RUN_SKILL))
             }
         }
 
-        return ModelPlan.Answer(content ?: "模型请求了未知工具，请重试。")
+        return ModelPlan.Answer(content ?: appContext.getString(R.string.ai_unknown_tool))
     }
 
     /** 阻塞式 OpenAI 兼容 chat-completions 请求，须在 IO 调度器调用。 */
@@ -147,7 +152,7 @@ class AiClient(
         http.newCall(request).execute().use { response ->
             val body = response.body()?.string().orEmpty()
             if (!response.isSuccessful()) {
-                throw IllegalStateException("AI HTTP ${response.code()}: $body")
+                throw IllegalStateException(appContext.getString(R.string.ai_http_error, response.code(), body))
             }
             return@withContext JsonParser.parseString(body).asJsonObject
         }
@@ -159,7 +164,7 @@ class AiClient(
         val model = cfg.resolvedModel()
         // Gemini 端点形如 {base}/models/{model}:generateContent?key=xxx
         val url = "${cfg.resolvedBaseUrl()}/models/${model}:generateContent?key=${cfg.apiKey}"
-        log("→ POST $url (provider=gemini, model=$model)")
+        log(appContext.getString(R.string.ai_post_log, url, "gemini", model))
         val resp = completeGemini(url, system, prompt, toolDef)
         return parseGeminiResponse(resp)
     }
@@ -178,7 +183,7 @@ class AiClient(
             if (name == TOOL_RUN_SKILL) {
                 val args = fn.get("args")?.takeIf { it.isJsonObject }?.asJsonObject ?: JsonObject()
                 return runSkillFromArgs(args)
-                    ?: throw IllegalStateException("模型返回的 $TOOL_RUN_SKILL 缺少 skill 参数。")
+                    ?: throw IllegalStateException(appContext.getString(R.string.ai_missing_skill_param, TOOL_RUN_SKILL))
             }
         }
 
@@ -186,7 +191,7 @@ class AiClient(
         val text = parts.joinToString("") { part ->
             part.asJsonObject.get("text")?.takeUnless { it.isJsonNull }?.asString ?: ""
         }
-        log("← 模型直接回答（不调用 Skill）")
+        log(appContext.getString(R.string.ai_direct_answer))
         return ModelPlan.Answer(text)
     }
 
@@ -238,7 +243,7 @@ class AiClient(
         http.newCall(request).execute().use { response ->
             val body = response.body()?.string().orEmpty()
             if (!response.isSuccessful()) {
-                throw IllegalStateException("Gemini HTTP ${response.code()}: $body")
+                throw IllegalStateException(appContext.getString(R.string.ai_gemini_http_error, response.code(), body))
             }
             return@withContext JsonParser.parseString(body).asJsonObject
         }
@@ -248,16 +253,12 @@ class AiClient(
 
     private fun systemText(skills: List<SkillBrief>): String {
         val sb = StringBuilder()
-        sb.append("你是一个 Android 智能体，负责理解用户意图并把任务规划到已注册的 Skill 上执行。\n")
-        sb.append("可用 Skill 如下：\n")
+        sb.append(appContext.getString(R.string.ai_prompt_intro))
         skills.forEachIndexed { idx, s ->
-            sb.append("${idx + 1}. ${s.id} — ${s.description}\n   参数: ${s.inputSpec}\n")
+            sb.append(appContext.getString(R.string.ai_prompt_skill_item, (idx + 1), s.id, s.description))
+            sb.append(appContext.getString(R.string.ai_prompt_skill_params, s.inputSpec))
         }
-        sb.append("规则：\n")
-        sb.append("- 当用户请求与某个 Skill 匹配时，只允许调用 run_skill 工具，并且 skill 必须是上面列表中的 id。\n")
-        sb.append("- 尽力根据用户语气把 inputs 参数填全；缺少关键参数时用合理默认值；确实缺失再要求用户补充。\n")
-        sb.append("- 如果用户只是闲聊、提问或没有匹配的 Skill（例如『需要登录、发消息』这类），就直接用中文回答，绝对不要编造 Skill 或工具。\n")
-        sb.append("- 路径必须是设备上的绝对路径。")
+        sb.append(appContext.getString(R.string.ai_prompt_rules))
         return sb.toString()
     }
 
@@ -267,7 +268,7 @@ class AiClient(
         val enum = JsonArray()
         skills.forEach { enum.add(it.id) }
         skillProp.add("enum", enum)
-        skillProp.addProperty("description", "要执行的 Skill id")
+        skillProp.addProperty("description", appContext.getString(R.string.tool_skill_desc))
 
         val inputsProp = JsonObject()
         inputsProp.addProperty("type", "object")
@@ -287,7 +288,7 @@ class AiClient(
 
         val function = JsonObject()
         function.addProperty("name", TOOL_RUN_SKILL)
-        function.addProperty("description", "执行一个已注册的多步 Skill 来完成任务")
+        function.addProperty("description", appContext.getString(R.string.tool_run_skill_desc))
         function.add("parameters", parameters)
 
         val tool = JsonObject()
@@ -308,7 +309,7 @@ class AiClient(
                     inputs[k] = if (v.isJsonPrimitive) v.asString else v.toString()
                 }
             }
-        log("← 模型规划: skill=$skill inputs=$inputs")
+        log(appContext.getString(R.string.ai_plan_log, skill, inputs.toString()))
         return ModelPlan.RunSkill(skill, inputs)
     }
 

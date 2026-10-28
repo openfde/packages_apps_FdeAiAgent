@@ -4,6 +4,7 @@ import android.app.appfunctions.AppFunctionManager as PlatformAppFunctionManager
 import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
+import com.fde.aiagent.R
 
 /**
  * 权限与执行层 —— 全应用唯一的安全把关点。
@@ -54,29 +55,42 @@ class PermissionGuard(private val context: Context) {
      */
     fun checkAppFunctionExecution(): String? {
         if (Build.VERSION.SDK_INT < MIN_SDK_FOR_APP_FUNCTIONS) {
-            return "当前设备是 API ${Build.VERSION.SDK_INT}，AppFunctions 需要 API " +
-                "$MIN_SDK_FOR_APP_FUNCTIONS。"
+            return appContext.getString(
+                R.string.guard_api_too_low,
+                Build.VERSION.SDK_INT,
+                MIN_SDK_FOR_APP_FUNCTIONS,
+            )
         }
         if (appFunctionManager == null) {
-            return "本设备没有 android.app.appfunctions.AppFunctionManager。"
+            return appContext.getString(R.string.guard_no_manager)
         }
         if (!hasExecuteAppFunctions()) {
-            return "缺少 $PERMISSION_EXECUTE_APP_FUNCTIONS（特权/系统签名权限）。" +
-                "FdeAiAgent 需要以 privileged + platform 签名装入 system_ext 才会被授予该权限。"
+            return appContext.getString(R.string.guard_missing_permission, PERMISSION_EXECUTE_APP_FUNCTIONS)
         }
         return null
     }
 
     /** 当前权限状态的摘要（调试/提示用）。 */
     fun describe(): String {
+        val granted = appContext.getString(R.string.describe_granted)
+        val notGranted = appContext.getString(R.string.describe_not_granted)
         val sb = StringBuilder()
-        sb.append("AppFunctions 支持: ").append(isAppFunctionsSupported()).append('\n')
+        sb.append(
+            appContext.getString(
+                R.string.describe_supported,
+                if (isAppFunctionsSupported()) "yes" else "no",
+            ),
+        ).append('\n')
         sb.append("EXECUTE_APP_FUNCTIONS: ")
-            .append(if (hasExecuteAppFunctions()) "已授予" else "未授予").append('\n')
-        sb.append("本地写入(CONTROL_SYSTEM): ")
-            .append(if (allowLocalWrite()) "已授予" else "未授予（仅应用私有目录可写）").append('\n')
+            .append(if (hasExecuteAppFunctions()) granted else notGranted).append('\n')
+        sb.append(
+            appContext.getString(
+                R.string.describe_local_write,
+                if (allowLocalWrite()) granted else appContext.getString(R.string.describe_local_write_partial),
+            ),
+        ).append('\n')
         if (!hasExecuteAppFunctions()) {
-            sb.append("提示：本应用需以 privileged + platform 签名装入 system_ext 才会被授予 EXECUTE_APP_FUNCTIONS。")
+            sb.append(appContext.getString(R.string.describe_privileged_hint))
         }
         return sb.toString()
     }

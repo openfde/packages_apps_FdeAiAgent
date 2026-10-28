@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- FDE 桌面风格（深色）：NoActionBar，Element-UI 深色调色板。其余样式复用 values/themes.xml -->
+    <style name="Theme.FdeDownload" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/pc_window_bg</item>
+        <item name="android:colorPrimary">@color/pc_primary</item>
+        <item name="android:colorPrimaryDark">@color/pc_primary</item>
+        <item name="android:colorAccent">@color/pc_primary</item>
+        <item name="android:statusBarColor">@color/pc_header_bg</item>
+        <item name="android:navigationBarColor">@color/pc_window_bg</item>
+        <item name="android:textColorPrimary">@color/pc_text_primary</item>
+        <item name="android:textColorSecondary">@color/pc_text_secondary</item>
+        <item name="android:textColorHint">@color/pc_text_secondary</item>
+    </style>
+
+</resources>

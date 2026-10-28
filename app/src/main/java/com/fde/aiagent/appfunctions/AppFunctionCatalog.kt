@@ -1,5 +1,7 @@
 package com.fde.aiagent.appfunctions
 
+import com.fde.aiagent.R
+
 /**
  * AppFunction 目录 —— 集中登记本智能体可以调用的所有 AppFunction。
  *
@@ -46,6 +48,7 @@ object AppFunctionCatalog {
         packageName = GALLERY_PACKAGE,
         serviceName = GALLERY_SERVICE,
         description = "在相册应用(com.fde.gallery3d)中打开指定绝对路径的图片预览",
+        descRes = R.string.appfunc_desc_open_image,
         schemaJson = """
             {
               "type": "object",
@@ -65,6 +68,7 @@ object AppFunctionCatalog {
         packageName = GALLERY_PACKAGE,
         serviceName = GALLERY_SERVICE,
         description = "在相册应用(com.fde.gallery3d)中播放指定绝对路径的视频",
+        descRes = R.string.appfunc_desc_play_video,
         schemaJson = """
             {
               "type": "object",
@@ -88,6 +92,7 @@ object AppFunctionCatalog {
         packageName = GALLERY_PACKAGE,
         serviceName = GALLERY_SERVICE,
         description = "给指定图片添加滤镜并保存（filter 可选，如 black_white 黑白；outputPath 可指定输出路径）",
+        descRes = R.string.appfunc_desc_edit_image,
         schemaJson = """
             {
               "type": "object",
@@ -108,6 +113,7 @@ object AppFunctionCatalog {
         packageName = SETTINGS_PACKAGE,
         serviceName = SETTINGS_SERVICE,
         description = "打开指定的系统设置页面（page 可选 wifi / display / sound / apps / storage）",
+        descRes = R.string.appfunc_desc_open_settings_page,
         schemaJson = """
             {
               "type": "object",
@@ -131,6 +137,7 @@ object AppFunctionCatalog {
         packageName = SETTINGS_PACKAGE,
         serviceName = SETTINGS_SERVICE,
         description = "调节屏幕亮度（action: brighten 调亮 / dim 调暗；step 可选，每次调节的亮度百分比）",
+        descRes = R.string.appfunc_desc_adjust_brightness,
         schemaJson = """
             {
               "type": "object",
@@ -159,6 +166,7 @@ object AppFunctionCatalog {
         packageName = SETTINGS_PACKAGE,
         serviceName = SETTINGS_SERVICE,
         description = "调节媒体音量或静音（action: volume_up 调高 / volume_down 调低 / mute 静音 / unmute 取消静音；step 可选，仅 volume_up/volume_down 生效、每次调节的音量百分比）",
+        descRes = R.string.appfunc_desc_adjust_media_volume,
         schemaJson = """
             {
               "type": "object",
@@ -184,6 +192,7 @@ object AppFunctionCatalog {
         packageName = SETTINGS_PACKAGE,
         serviceName = SETTINGS_SERVICE,
         description = "开启/关闭深色主题（action: on 开启深色模式 / off 关闭深色模式）",
+        descRes = R.string.appfunc_desc_set_dark_theme,
         schemaJson = """
             {
               "type": "object",
@@ -208,6 +217,7 @@ object AppFunctionCatalog {
         packageName = SETTINGS_PACKAGE,
         serviceName = SETTINGS_SERVICE,
         description = "按包名或应用名打开某个应用（packageName 或 appName，至少提供一个，同时提供时以 packageName 优先）",
+        descRes = R.string.appfunc_desc_open_app,
         schemaJson = """
             {
               "type": "object",
@@ -234,6 +244,7 @@ object AppFunctionCatalog {
         packageName = DOCUMENTS_PACKAGE,
         serviceName = DOCUMENTS_SERVICE,
         description = "删除文件/文件夹（移入系统回收站，可恢复；path 必填，支持绝对路径或相对桌面的名称）",
+        descRes = R.string.appfunc_desc_delete_file,
         schemaJson = """
             {
               "type": "object",
@@ -257,6 +268,7 @@ object AppFunctionCatalog {
         packageName = DOCUMENTS_PACKAGE,
         serviceName = DOCUMENTS_SERVICE,
         description = "把源文件夹下的所有文件/子文件夹移动到目标目录（sourcePath 与 destinationPath 必填，支持绝对路径或相对桌面的名称）",
+        descRes = R.string.appfunc_desc_move_files,
         schemaJson = """
             {
               "type": "object",
@@ -280,6 +292,7 @@ object AppFunctionCatalog {
         packageName = DOCUMENTS_PACKAGE,
         serviceName = DOCUMENTS_SERVICE,
         description = "重命名文件/文件夹（path 与 newName 必填，支持绝对路径或相对桌面的名称）",
+        descRes = R.string.appfunc_desc_rename_folder,
         schemaJson = """
             {
               "type": "object",
@@ -305,6 +318,7 @@ object AppFunctionCatalog {
         packageName = DOCUMENTS_PACKAGE,
         serviceName = DOCUMENTS_SERVICE,
         description = "清空系统回收站，永久删除回收站中的全部内容（无需参数，此操作不可恢复）",
+        descRes = R.string.appfunc_desc_empty_trash,
         schemaJson = """
             {
               "type": "object",

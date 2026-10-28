@@ -45,10 +45,11 @@ import com.fde.aiagent.ui.SvgStateRenderer
  *    流程节点、运行日志与错误提示。
  *
  * 本 Activity 只负责 UI 与事件订阅，不做任何业务逻辑。
+ * 所有用户可见文案均来自 @string/…（中英文 + 深色模式自动适配）。
  */
 class MainActivity : Activity(), ExecutionListener {
 
-    private val renderer = SvgStateRenderer()
+    private lateinit var renderer: SvgStateRenderer
 
     private lateinit var spProvider: Spinner
     private lateinit var spSettingsPage: Spinner
@@ -92,20 +93,20 @@ class MainActivity : Activity(), ExecutionListener {
 
         private const val DEFAULT_IMAGE_PATH = "/mnt/sdcard/Pictures/aa.png"
 
-        /** 「打开设置页」下拉可选页面：key -> 中文名（与 Settings 的 openSettingsPage 保持一致）。 */
+        /** 「打开设置页」下拉可选页面：key -> 显示名资源（与 Settings 的 openSettingsPage 保持一致）。 */
         private val SETTINGS_PAGES = listOf(
-            "wifi" to "Wi-Fi",
-            "display" to "显示",
-            "sound" to "声音",
-            "apps" to "应用",
-            "storage" to "存储",
+            "wifi" to R.string.settings_page_name_wifi,
+            "display" to R.string.settings_page_name_display,
+            "sound" to R.string.settings_page_name_sound,
+            "apps" to R.string.settings_page_name_apps,
+            "storage" to R.string.settings_page_name_storage,
         )
 
-        /** 语音识别语言：key -> 界面显示名。auto=自动检测中/英。 */
+        /** 语音识别语言：key -> 显示名资源。auto=自动检测中/英。 */
         private val VOICE_LANGS = listOf(
-            "auto" to "自动检测（中/英）",
-            "zh-CN" to "中文",
-            "en-US" to "English",
+            "auto" to R.string.voice_lang_auto,
+            "zh-CN" to R.string.voice_lang_zh,
+            "en-US" to R.string.voice_lang_en,
         )
     }
 
@@ -114,6 +115,7 @@ class MainActivity : Activity(), ExecutionListener {
         setContentView(R.layout.activity_ai_agent)
 
         actionBar?.hide()
+        renderer = SvgStateRenderer(this)
         prefs = getSharedPreferences(PREFS, Context.MODE_PRIVATE)
         spProvider = findViewById(R.id.spProvider)
         spSettingsPage = findViewById(R.id.spSettingsPage)
@@ -140,21 +142,23 @@ class MainActivity : Activity(), ExecutionListener {
         spProvider.adapter = ArrayAdapter(
             this,
             android.R.layout.simple_spinner_item,
-            providers.map { it.label },
+            providers.map { getString(it.labelRes) },
         ).apply { setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item) }
 
         // 设置页选择：wifi/display/sound/apps/storage
         spSettingsPage.adapter = ArrayAdapter(
             this,
             android.R.layout.simple_spinner_item,
-            SETTINGS_PAGES.map { (key, name) -> "$key（$name）" },
+            SETTINGS_PAGES.map { (key, nameRes) ->
+                getString(R.string.settings_page_item_format, getString(nameRes), key)
+            },
         ).apply { setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item) }
 
         // 语音识别语言选择：自动检测（中/英）/ 中文 / English
         spVoiceLang.adapter = ArrayAdapter(
             this,
             android.R.layout.simple_spinner_item,
-            VOICE_LANGS.map { it.second },
+            VOICE_LANGS.map { (_, nameRes) -> getString(nameRes) },
         ).apply { setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item) }
 
         // 恢复上次保存的配置
@@ -166,7 +170,7 @@ class MainActivity : Activity(), ExecutionListener {
         editBaseUrl.setText(prefs.getString(KEY_BASE_URL, ""))
         editImagePath.setText(prefs.getString(KEY_IMAGE_PATH, DEFAULT_IMAGE_PATH))
         editVideoPath.setText(prefs.getString(KEY_VIDEO_PATH, ""))
-        editPrompt.setText(prefs.getString(KEY_PROMPT, "打开 /mnt/sdcard/Pictures/aa.png 这张图片预览"))
+        editPrompt.setText(prefs.getString(KEY_PROMPT, getString(R.string.default_prompt)))
 
         // 恢复语音输入配置
         val savedVoiceLang = prefs.getString(KEY_VOICE_LANG, "auto")!!
@@ -205,25 +209,28 @@ class MainActivity : Activity(), ExecutionListener {
         findViewById<Button>(R.id.btnOpenGallery).setOnClickListener {
             saveSettings()
             val path = editImagePath.text.toString().trim()
-            if (path.isEmpty()) { toast("请填写图片路径"); return@setOnClickListener }
-            appendLog("===== 直接调用相册 AppFunction: openImage =====")
+            if (path.isEmpty()) {
+                toast(getString(R.string.toast_fill_image_path))
+                return@setOnClickListener
+            }
+            appendLog(getString(R.string.log_open_image))
             coordinator.openImage(path, defaultTitle(path))
         }
         findViewById<Button>(R.id.btnOpenSettings).setOnClickListener {
             saveSettings()
             val index = spSettingsPage.selectedItemPosition.coerceIn(0, SETTINGS_PAGES.lastIndex)
             val page = SETTINGS_PAGES.getOrNull(index)?.first ?: "wifi"
-            appendLog("===== 直接调用设置 AppFunction: openSettingsPage($page) =====")
+            appendLog(getString(R.string.log_open_settings, page))
             coordinator.openSettingsPage(page)
         }
         findViewById<Button>(R.id.btnGrantFunctionPermission).setOnClickListener {
             appendLog(coordinator.featureSummary())
         }
         findViewById<Button>(R.id.btnClearLog).setOnClickListener {
-            tvLog.setText("等待运行…")
+            tvLog.setText(getString(R.string.log_waiting))
             renderer.reset()
             tvError.visibility = View.GONE
-            setStatus("就绪", R.color.pc_text_secondary)
+            setStatus(getString(R.string.status_ready), R.color.pc_text_secondary)
             renderSvg()
         }
 
@@ -242,7 +249,7 @@ class MainActivity : Activity(), ExecutionListener {
     /** 麦克风按钮：点击开始聆听，再次点击停止。 */
     private fun toggleVoiceInput() {
         if (recognizing) {
-            stopListening("已停止录音")
+            stopListening(getString(R.string.voice_stopped))
             return
         }
         if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
@@ -262,8 +269,8 @@ class MainActivity : Activity(), ExecutionListener {
             if (grantResults.firstOrNull() == PackageManager.PERMISSION_GRANTED) {
                 startListening()
             } else {
-                tvVoiceStatus.text = "未授予录音权限，无法语音输入"
-                toast("未授予录音权限，无法使用语音输入")
+                tvVoiceStatus.text = getString(R.string.voice_no_permission)
+                toast(getString(R.string.voice_no_permission))
             }
         }
     }
@@ -271,8 +278,8 @@ class MainActivity : Activity(), ExecutionListener {
     /** 启动系统 SpeechRecognizer 聆听。 */
     private fun startListening() {
         if (!SpeechRecognizer.isRecognitionAvailable(this)) {
-            tvVoiceStatus.text = "设备未安装可用的语音识别服务"
-            toast("设备未安装可用的语音识别服务")
+            tvVoiceStatus.text = getString(R.string.voice_no_service)
+            toast(getString(R.string.voice_no_service))
             return
         }
         val lang = selectedVoiceLanguage()
@@ -299,15 +306,16 @@ class MainActivity : Activity(), ExecutionListener {
         }
 
         recognizing = true
-        btnVoiceInput.text = "⏹ 停止"
-        tvVoiceStatus.text = "正在聆听…请对着麦克风说话"
+        btnVoiceInput.text = getString(R.string.voice_stop_btn)
+        tvVoiceStatus.text = getString(R.string.voice_listening)
         try {
             recognizer.startListening(intent)
         } catch (e: Throwable) {
             recognizing = false
-            btnVoiceInput.text = "🎤 语音输入"
-            tvVoiceStatus.text = "无法启动语音识别：${e.message}"
-            toast("无法启动语音识别：${e.message}")
+            val msg = getString(R.string.voice_start_failed, e.message)
+            btnVoiceInput.text = getString(R.string.btn_voice_input)
+            tvVoiceStatus.text = msg
+            toast(msg)
         }
     }
 
@@ -318,17 +326,17 @@ class MainActivity : Activity(), ExecutionListener {
     private fun stopListening(msg: String) {
         speechRecognizer?.stopListening()
         recognizing = false
-        btnVoiceInput.text = "🎤 语音输入"
+        btnVoiceInput.text = getString(R.string.btn_voice_input)
         tvVoiceStatus.text = msg
     }
 
     private val recognitionListener = object : RecognitionListener {
         override fun onReadyForSpeech(params: Bundle?) {
-            runOnUiThread { tvVoiceStatus.text = "准备就绪，请开始说话…" }
+            runOnUiThread { tvVoiceStatus.text = getString(R.string.voice_ready) }
         }
 
         override fun onBeginningOfSpeech() {
-            runOnUiThread { tvVoiceStatus.text = "正在聆听…" }
+            runOnUiThread { tvVoiceStatus.text = getString(R.string.voice_listening_short) }
         }
 
         override fun onRmsChanged(rmsdB: Float) = Unit
@@ -336,13 +344,13 @@ class MainActivity : Activity(), ExecutionListener {
         override fun onBufferReceived(buffer: ByteArray?) = Unit
 
         override fun onEndOfSpeech() {
-            runOnUiThread { tvVoiceStatus.text = "识别中…" }
+            runOnUiThread { tvVoiceStatus.text = getString(R.string.voice_recognizing) }
         }
 
         override fun onError(error: Int) {
             runOnUiThread {
                 recognizing = false
-                btnVoiceInput.text = "🎤 语音输入"
+                btnVoiceInput.text = getString(R.string.btn_voice_input)
                 tvVoiceStatus.text = errorText(error)
                 if (error != SpeechRecognizer.ERROR_CLIENT) toast(tvVoiceStatus.text.toString())
             }
@@ -351,7 +359,7 @@ class MainActivity : Activity(), ExecutionListener {
         override fun onResults(results: Bundle?) {
             runOnUiThread {
                 recognizing = false
-                btnVoiceInput.text = "🎤 语音输入"
+                btnVoiceInput.text = getString(R.string.btn_voice_input)
                 val matches = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
                     ?: return@runOnUiThread
                 handleRecognized(matches.mapNotNull { it })
@@ -367,28 +375,28 @@ class MainActivity : Activity(), ExecutionListener {
     private fun handleRecognized(matches: List<String>) {
         val text = matches.firstOrNull { it.isNotBlank() }
         if (text == null) {
-            tvVoiceStatus.text = "未识别到文字，请重试"
-            toast("未识别到文字，请重试")
+            tvVoiceStatus.text = getString(R.string.voice_no_match)
+            toast(getString(R.string.voice_no_match))
             return
         }
         editPrompt.setText(text)
         editPrompt.setSelection(text.length)
-        appendLog("🎤 语音输入: $text")
-        tvVoiceStatus.text = "识别成功：$text"
-        if (chkAutoRun.isChecked) runAgent() else toast("识别成功，请确认指令后运行")
+        appendLog(getString(R.string.log_voice_input, text))
+        tvVoiceStatus.text = getString(R.string.voice_recognized, text)
+        if (chkAutoRun.isChecked) runAgent() else toast(getString(R.string.voice_recognized_confirm))
     }
 
     private fun errorText(code: Int): String = when (code) {
-        SpeechRecognizer.ERROR_AUDIO -> "录音失败（无可用麦克风或音频被占用）"
-        SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS -> "缺少录音权限，无法录音"
-        SpeechRecognizer.ERROR_NETWORK -> "网络错误，识别失败"
-        SpeechRecognizer.ERROR_NETWORK_TIMEOUT -> "网络超时，识别失败"
-        SpeechRecognizer.ERROR_NO_MATCH -> "未识别到语音，请重试"
-        SpeechRecognizer.ERROR_RECOGNIZER_BUSY -> "语音识别服务忙碌，请稍候再试"
-        SpeechRecognizer.ERROR_SERVER -> "语音识别服务出错"
-        SpeechRecognizer.ERROR_SPEECH_TIMEOUT -> "长时间没有说话，已停止聆听"
-        SpeechRecognizer.ERROR_CLIENT -> "客户端错误，无法开始识别"
-        else -> "语音识别失败（错误码 code=$code）"
+        SpeechRecognizer.ERROR_AUDIO -> getString(R.string.stt_error_audio)
+        SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS -> getString(R.string.stt_error_permissions)
+        SpeechRecognizer.ERROR_NETWORK -> getString(R.string.stt_error_network)
+        SpeechRecognizer.ERROR_NETWORK_TIMEOUT -> getString(R.string.stt_error_network_timeout)
+        SpeechRecognizer.ERROR_NO_MATCH -> getString(R.string.stt_error_no_match)
+        SpeechRecognizer.ERROR_RECOGNIZER_BUSY -> getString(R.string.stt_error_busy)
+        SpeechRecognizer.ERROR_SERVER -> getString(R.string.stt_error_server)
+        SpeechRecognizer.ERROR_SPEECH_TIMEOUT -> getString(R.string.stt_error_speech_timeout)
+        SpeechRecognizer.ERROR_CLIENT -> getString(R.string.stt_error_client)
+        else -> getString(R.string.stt_error_other, code)
     }
 
     /** 切换供应商时：Base URL 仅在选择“自定义”时显示；同步右上角 model 信息。 */
@@ -402,7 +410,7 @@ class MainActivity : Activity(), ExecutionListener {
         // 未手动填模型时，提示栏展示当前生效模型
         val effectiveModel = editModel.text.toString().trim()
             .ifEmpty { provider.defaultModel }
-        tvModelInfo.text = "${provider.id} · model: $effectiveModel"
+        tvModelInfo.text = getString(R.string.model_info_format, provider.id, effectiveModel)
     }
 
     private fun selectedProviderId(): String =
@@ -423,15 +431,15 @@ class MainActivity : Activity(), ExecutionListener {
         saveSettings()
 
         if (cfg.apiKey.isEmpty()) {
-            toast("请先选择 AI 供应商并填写 API Key")
+            toast(getString(R.string.toast_select_provider))
             return
         }
         if (cfg.provider() == AiProvider.CUSTOM && cfg.resolvedBaseUrl().isEmpty()) {
-            toast("请填写自定义 Base URL")
+            toast(getString(R.string.toast_fill_custom_base_url))
             return
         }
         if (prompt.isEmpty()) {
-            toast("请输入智能体指令")
+            toast(getString(R.string.toast_enter_prompt))
             return
         }
         coordinator.runAgent(cfg, prompt)
@@ -448,7 +456,7 @@ class MainActivity : Activity(), ExecutionListener {
             is AgentEvent.FlowStarted -> {
                 renderer.reset()
                 tvError.visibility = View.GONE
-                setStatus("执行中…", R.color.pc_warning)
+                setStatus(getString(R.string.status_executing), R.color.pc_warning)
                 renderSvg()
             }
 
@@ -469,23 +477,23 @@ class MainActivity : Activity(), ExecutionListener {
                     is AgentEvent.NodeFailed -> event.node
                     else -> null
                 }
-                node?.let { setStatus("执行中…", R.color.pc_warning) }
+                node?.let { setStatus(getString(R.string.status_executing), R.color.pc_warning) }
                 if (event is AgentEvent.NodeFailed) showError(event.error)
                 renderSvg()
             }
 
             is AgentEvent.FlowFinished -> {
                 renderer.onEvent(event)
-                appendLog("完成：${event.summary}")
-                setStatus("完成", R.color.pc_success)
+                appendLog(getString(R.string.log_flow_finished, event.summary))
+                setStatus(getString(R.string.status_done), R.color.pc_success)
                 renderSvg()
             }
 
             is AgentEvent.FlowFailed -> {
                 renderer.onEvent(event)
-                appendLog("失败：${event.error}")
+                appendLog(getString(R.string.log_flow_failed, event.error))
                 showError(event.error)
-                setStatus("失败", R.color.pc_danger)
+                setStatus(getString(R.string.status_failed), R.color.pc_danger)
                 renderSvg()
             }
         }
@@ -502,8 +510,9 @@ class MainActivity : Activity(), ExecutionListener {
     }
 
     private fun renderSvg() {
+        val bg = renderer.canvasColor
         val html =
-            "<!DOCTYPE html><html><head><meta charset=\"utf-8\"><style>html,body{margin:0;padding:0;background:#F9FAFC;}</style></head>" +
+            "<!DOCTYPE html><html><head><meta charset=\"utf-8\"><style>html,body{margin:0;padding:0;background:$bg;}</style></head>" +
                 "<body>${renderer.render()}</body></html>"
         svgView.loadDataWithBaseURL(null, html, "text/html", "utf-8", null)
     }

@@ -1,5 +1,7 @@
 package com.fde.aiagent.skill
 
+import android.content.Context
+import com.fde.aiagent.R
 import com.fde.aiagent.appfunctions.AppFunctionCatalog
 import com.fde.aiagent.appfunctions.AppFunctionDispatcher
 import com.fde.aiagent.appfunctions.FunctionResult
@@ -34,10 +36,13 @@ data class SkillRunResult(
  *  4. 失败即中断（fail-fast），把第一个失败原因作为整体结果返回。
  */
 class SkillEngine(
+    private val context: Context,
     private val dispatcher: AppFunctionDispatcher,
     private val guard: PermissionGuard,
     private val builtins: SkillBuiltins,
 ) {
+
+    private val appContext = context.applicationContext
 
     suspend fun execute(skill: Skill, input: Map<String, String>, bus: ExecutionBus): SkillRunResult {
         val outputs = LinkedHashMap<String, String>()
@@ -51,7 +56,11 @@ class SkillEngine(
 
             if (!evalWhen(step.runWhen, input, outputs)) {
                 bus.publish(AgentEvent.NodeSkipped(node.asSkipped()))
-                bus.publish(AgentEvent.Logged("-> 跳过 ${step.id}（条件不满足: ${step.runWhen}）"))
+                bus.publish(
+                    AgentEvent.Logged(
+                        appContext.getString(R.string.log_skip_step, step.id, step.runWhen),
+                    ),
+                )
                 continue
             }
 
@@ -61,18 +70,21 @@ class SkillEngine(
                 val out = executeStep(step, resolved, input, outputs)
                 outputs[step.id] = out
                 bus.publish(AgentEvent.NodeFinished(node.asDone(out)))
-                bus.publish(AgentEvent.Logged("✔ ${step.id}: ${out.oneLine()}"))
+                bus.publish(AgentEvent.Logged(appContext.getString(R.string.log_step_ok, step.id, out.oneLine())))
             } catch (t: Throwable) {
                 val msg = "${t.javaClass.simpleName}: ${t.message}"
                 outputs[step.id] = msg
                 bus.publish(AgentEvent.NodeFailed(node.asFailed(msg), msg))
-                bus.publish(AgentEvent.Logged("✖ ${step.id} 失败: $msg"))
-                return SkillRunResult(summary = "'${skill.id}' 在第 ${index + 1} 步（${step.id}）失败: $msg", failed = true)
+                bus.publish(AgentEvent.Logged(appContext.getString(R.string.log_step_failed, step.id, msg)))
+                return SkillRunResult(
+                    summary = appContext.getString(R.string.summary_step_failed, skill.id, index + 1, step.id, msg),
+                    failed = true,
+                )
             }
         }
 
         val summary = summaryOf(skill, outputs)
-        bus.publish(AgentEvent.Logged("✔ Skill '${skill.id}' 执行完成"))
+        bus.publish(AgentEvent.Logged(appContext.getString(R.string.log_skill_completed, skill.id)))
         return SkillRunResult(summary = summary, failed = false)
     }
 
@@ -86,31 +98,31 @@ class SkillEngine(
         Skill.TYPE_FUNCTION -> runFunction(step, resolved)
         Skill.TYPE_BUILTIN -> builtins.run(step.action, resolved)
         Skill.TYPE_REPORT -> resolveTemplate(step.template, original, outputs)
-        else -> throw IllegalStateException("未知步骤类型: ${step.type}")
+        else -> throw IllegalStateException(appContext.getString(R.string.unknown_step_type, step.type))
     }
 
     /** check 步骤：把判断逻辑集中到 PermissionGuard / 参数校验。 */
     private fun runCheck(step: SkillStep, input: Map<String, String>): String = when (step.check) {
         "appfunctions" -> guard.checkAppFunctionExecution()?.let { throw IllegalStateException(it) }
-            ?: "✔ AppFunctions 可用（EXECUTE_APP_FUNCTIONS 已授予）"
+            ?: appContext.getString(R.string.check_app_ok)
         "local_write" -> if (guard.allowLocalWrite()) {
-            "✔ 本地写入权限已授予（CONTROL_SYSTEM）"
+            appContext.getString(R.string.check_local_ok)
         } else {
-            throw IllegalStateException("本地写入被权限守卫拦截（缺少 CONTROL_SYSTEM，仅应用私有目录可写）")
+            throw IllegalStateException(appContext.getString(R.string.check_local_fail))
         }
         "input" -> {
             val missing = step.checkInputs.filter { input[it].isNullOrBlank() }
             if (missing.isNotEmpty()) {
-                throw IllegalStateException("缺少必填参数: ${missing.joinToString()}")
+                throw IllegalStateException(appContext.getString(R.string.check_input_fail, missing.joinToString()))
             }
-            "✔ 参数校验通过: ${step.checkInputs.joinToString()}"
+            appContext.getString(R.string.check_input_ok, step.checkInputs.joinToString())
         }
-        else -> "✔ 检查通过"
+        else -> appContext.getString(R.string.check_ok)
     }
 
     private suspend fun runFunction(step: SkillStep, resolved: Map<String, String>): String {
         val fn = AppFunctionCatalog.get(step.function)
-            ?: throw IllegalStateException("目录中不存在 AppFunction: ${step.function}")
+            ?: throw IllegalStateException(appContext.getString(R.string.fn_not_in_catalog, step.function))
         return when (val result = dispatcher.dispatch(fn, resolved)) {
             is FunctionResult.Success -> result.displayText
             is FunctionResult.Failure -> throw IllegalStateException(result.displayText)
@@ -122,7 +134,7 @@ class SkillEngine(
         if (last != null && last.type == Skill.TYPE_REPORT && outputs.containsKey(last.id)) {
             return outputs.getValue(last.id)
         }
-        return "Skill '${skill.id}' 执行完成（${outputs.size} 步）"
+        return appContext.getString(R.string.summary_completed, skill.id, outputs.size)
     }
 
     // ---------- 参数 / 模板 / 条件解析（纯逻辑委托给 SkillRefs，便于单测） ----------

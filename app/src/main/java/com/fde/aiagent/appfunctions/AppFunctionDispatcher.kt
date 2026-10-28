@@ -5,6 +5,7 @@ import android.app.appfunctions.ExecuteAppFunctionRequest as PlatformExecuteAppF
 import android.app.appfunctions.ExecuteAppFunctionResponse as PlatformExecuteAppFunctionResponse
 import android.app.appsearch.GenericDocument
 import android.content.Context
+import com.fde.aiagent.R
 import com.fde.aiagent.execution.PermissionGuard
 import kotlin.coroutines.resume
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -39,7 +40,8 @@ class AppFunctionDispatcher(
     }
 
     private suspend fun doExecute(fn: AppFunction, params: Map<String, String>): FunctionResult {
-        val manager = guard.appFunctionManager ?: return FunctionResult.Failure("AppFunctionManager 不可用。")
+        val manager = guard.appFunctionManager
+            ?: return FunctionResult.Failure(context.getString(R.string.fn_manager_unavailable))
 
         return try {
             val documentBuilder = GenericDocument.Builder<GenericDocument.Builder<*>>(
@@ -116,32 +118,56 @@ class AppFunctionDispatcher(
 
             if (ok == false || !error.isNullOrEmpty()) {
                 return FunctionResult.Failure(
-                    displayText = "AppFunction ${fn.id}（${fn.packageName}）返回失败：" +
-                        (error?.takeIf { it.isNotEmpty() } ?: "未知错误") +
-                        (status?.let { "，status=$it" } ?: ""),
+                    displayText = context.getString(
+                        R.string.fn_failed_text,
+                        fn.id,
+                        fn.packageName,
+                        (error?.takeIf { it.isNotEmpty() }
+                            ?: context.getString(R.string.fn_unknown_error)) +
+                            (status?.let { context.getString(R.string.fn_status_suffix, it) } ?: ""),
+                    ),
                 )
             }
 
             FunctionResult.Success(
                 displayText = buildString {
-                    append("已调用 ${fn.packageName}#${fn.id}（${fn.serviceName}）")
-                    if (status != null) append("，返回 status=$status") else append("（返回文档无 status 字段）")
-                    if (before != null && after != null) append("，调整前 $before% → 调整后 $after%")
-                    if (enabled != null) append("，深色模式=${if (enabled) "开启" else "关闭"}")
-                    if (muted != null) append("，静音=${if (muted) "是" else "否"}")
-                    if (resolvedPackage != null) append("，应用包名=$resolvedPackage")
-                    if (resolvedAppName != null) append("，应用名=$resolvedAppName")
-                    if (resultPath != null) append("，路径=$resultPath")
-                    if (newPath != null) append("，新路径=$newPath")
-                    if (movedCount != null) append("，已移动 $movedCount 项")
-                    if (deletedCount != null) append("，已删除 $deletedCount 项")
-                    outputPath?.takeIf { it.isNotEmpty() }?.let { append("，输出: $it") }
+                    append(context.getString(R.string.fn_invoked_text, fn.packageName, fn.id, fn.serviceName))
+                    if (status != null) append(context.getString(R.string.fn_status_returned, status))
+                    else append(context.getString(R.string.fn_no_status))
+                    if (before != null && after != null) {
+                        append(context.getString(R.string.fn_before_after, before, after))
+                    }
+                    if (enabled != null) {
+                        append(context.getString(if (enabled) R.string.fn_dark_on else R.string.fn_dark_off))
+                    }
+                    if (muted != null) {
+                        append(context.getString(if (muted) R.string.fn_muted_yes else R.string.fn_muted_no))
+                    }
+                    if (resolvedPackage != null) {
+                        append(context.getString(R.string.fn_resolved_package, resolvedPackage))
+                    }
+                    if (resolvedAppName != null) {
+                        append(context.getString(R.string.fn_resolved_app, resolvedAppName))
+                    }
+                    if (resultPath != null) {
+                        append(context.getString(R.string.fn_result_path, resultPath))
+                    }
+                    if (newPath != null) {
+                        append(context.getString(R.string.fn_new_path, newPath))
+                    }
+                    if (movedCount != null) {
+                        append(context.getString(R.string.fn_moved_count, movedCount))
+                    }
+                    if (deletedCount != null) {
+                        append(context.getString(R.string.fn_deleted_count, deletedCount))
+                    }
+                    outputPath?.takeIf { it.isNotEmpty() }?.let { append(context.getString(R.string.fn_output_path, it)) }
                 },
                 raw = status ?: "ok",
             )
         } catch (t: Throwable) {
             FunctionResult.Failure(
-                displayText = "AppFunctions 调用失败：${t.javaClass.simpleName}: ${t.message}",
+                displayText = context.getString(R.string.fn_call_failed, "${t.javaClass.simpleName}: ${t.message}"),
                 cause = t,
             )
         }

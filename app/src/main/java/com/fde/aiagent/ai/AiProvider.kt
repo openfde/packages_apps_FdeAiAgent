@@ -1,5 +1,7 @@
 package com.fde.aiagent.ai
 
+import com.fde.aiagent.R
+
 /**
  * 支持的 AI 供应商预设。
  *
@@ -14,8 +16,8 @@ package com.fde.aiagent.ai
 enum class AiProvider(
     /** 唯一 id，持久化到 SharedPreferences。 */
     val id: String,
-    /** 界面显示名。 */
-    val label: String,
+    /** 界面显示名（字符串资源 id，自动适配中英文）。 */
+    val labelRes: Int,
     /** OpenAI 兼容的 chat/completions 端点；Gemini 为 REST API base（不含模型名）。 */
     val apiUrl: String,
     /** 该供应商的默认模型，用户在界面上可覆盖。 */
@@ -25,35 +27,35 @@ enum class AiProvider(
 ) {
     DEEPSEEK(
         id = "deepseek",
-        label = "DeepSeek（深度求索）",
+        labelRes = R.string.provider_deepseek,
         apiUrl = "https://api.deepseek.com/chat/completions",
         defaultModel = "deepseek-chat",
         openAiCompatible = true,
     ),
     QWEN(
         id = "qwen",
-        label = "通义千问（Qwen）",
+        labelRes = R.string.provider_qwen,
         apiUrl = "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions",
         defaultModel = "qwen-plus",
         openAiCompatible = true,
     ),
     ZHIPU(
         id = "zhipu",
-        label = "智谱 AI（GLM）",
+        labelRes = R.string.provider_zhipu,
         apiUrl = "https://open.bigmodel.cn/api/paas/v4/chat/completions",
         defaultModel = "glm-4-plus",
         openAiCompatible = true,
     ),
     KIMI(
         id = "kimi",
-        label = "Kimi（月之暗面）",
+        labelRes = R.string.provider_kimi,
         apiUrl = "https://api.moonshot.cn/v1/chat/completions",
         defaultModel = "moonshot-v1-8k",
         openAiCompatible = true,
     ),
     GEMINI(
         id = "gemini",
-        label = "Google Gemini",
+        labelRes = R.string.provider_gemini,
         apiUrl = "https://generativelanguage.googleapis.com/v1beta",
         defaultModel = "gemini-2.5-flash",
         openAiCompatible = false,
@@ -61,7 +63,7 @@ enum class AiProvider(
     /** 任意 OpenAI 兼容端点（baseUrl / 模型由用户在界面上填写）。 */
     CUSTOM(
         id = "custom",
-        label = "自定义 OpenAI 兼容（Custom）",
+        labelRes = R.string.provider_custom,
         apiUrl = "",
         defaultModel = "gpt-4o",
         openAiCompatible = true,

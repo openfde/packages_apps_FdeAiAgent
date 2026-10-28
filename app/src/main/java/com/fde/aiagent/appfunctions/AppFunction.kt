@@ -8,6 +8,8 @@ data class AppFunction(
     val description: String,
     val schemaJson: String,
     val requiredParams: List<String>,
+    /** 面向用户展示的本地化描述资源 ID；为 0 时回退到 [description]。 */
+    val descRes: Int = 0,
 )
 
 /** AppFunction 调用结果（与模型 / UI 可交互的统一形态）。 */
