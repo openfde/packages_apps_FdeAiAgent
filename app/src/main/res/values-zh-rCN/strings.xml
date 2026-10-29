@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">FDE 智能体</string>
+    <string name="app_name">FDE AI Agent</string>
 
     <!-- ================= 顶栏 ================= -->
     <string name="tv_subtitle">AI × Skill × AppFunctions</string>
