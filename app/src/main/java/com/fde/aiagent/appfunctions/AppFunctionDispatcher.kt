@@ -111,6 +111,21 @@ class AppFunctionDispatcher(
             val newPath = runCatching { doc.getPropertyString("newPath") }.getOrNull()
             val movedCount = runCatching { doc.getPropertyLong("movedCount") }.getOrNull()
             val deletedCount = runCatching { doc.getPropertyLong("deletedCount") }.getOrNull()
+            // 查找/文件列表结果：findFiles 带 count + matches；findLargeFiles / findUnusedFiles 带
+            // count + paths；批量删除结果带 deletedCount + paths（最多 200 条，展示时截断前 3 条）。
+            val count = runCatching { doc.getPropertyLong("count") }.getOrNull()
+            val matches = runCatching { doc.getPropertyStringArray("matches") }.getOrNull()
+            val resultPaths = runCatching { doc.getPropertyStringArray("paths") }.getOrNull()
+            val fileList = listOf(
+                matches?.toList() ?: emptyList(),
+                resultPaths?.toList() ?: emptyList(),
+            ).flatten().filter { it.isNotBlank() }.distinct().take(3).joinToString("；")
+            // 批量删除是否被用户在确认弹窗中取消。
+            val cancelled = if (names.contains("cancelled")) {
+                runCatching { doc.getPropertyBoolean("cancelled") }.getOrNull()
+            } else {
+                null
+            }
             // getPropertyBoolean 在属性缺失时返回 false，必须先判断属性是否存在。
             val hasOkProp = names.contains("ok")
             val ok = if (hasOkProp) runCatching { doc.getPropertyBoolean("ok") }.getOrNull() else null
@@ -160,6 +175,15 @@ class AppFunctionDispatcher(
                     }
                     if (deletedCount != null) {
                         append(context.getString(R.string.fn_deleted_count, deletedCount))
+                    }
+                    if (count != null) {
+                        append(context.getString(R.string.fn_find_count, count))
+                    }
+                    if (fileList.isNotEmpty()) {
+                        append(context.getString(R.string.fn_paths, fileList))
+                    }
+                    if (cancelled == true) {
+                        append(context.getString(R.string.fn_cancelled_yes))
                     }
                     outputPath?.takeIf { it.isNotEmpty() }?.let { append(context.getString(R.string.fn_output_path, it)) }
                 },

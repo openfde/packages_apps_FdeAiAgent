@@ -28,7 +28,9 @@ app/src/main/
 │   ├── file_op/SKILL.md          # 文件管理操作（DocumentsUI）：删除移入回收站（deleteFile）、移动文件（moveFiles）、重命名（renameFolder）、清空回收站（emptyTrash）
 │   ├── settings/SKILL.md        # 系统设置控制：打开设置页 wifi/display/sound/apps/storage（openSettingsPage）+ 调节屏幕亮度（adjustBrightness）+ 调节媒体音量（adjustMediaVolume）+ 开启/关闭深色模式（setDarkTheme）
 │   ├── app_open/SKILL.md        # 打开应用：按包名或应用名打开（openApp，经 Settings 的 OpenSettingsPageAppFunctionService）
-│   └── task_create/SKILL.md      # 写入任务文件并回读校验（演示权限守卫 + 引用链）
+│   ├── task_create/SKILL.md      # 写入任务文件并回读校验（演示权限守卫 + 引用链）
+│   ├── file_find/SKILL.md        # 查找文件（DocumentsUI 只读 AppFunction）：按名称/时间过滤条件查找（findFiles）、找大文件（findLargeFiles）、找 N 天未用文件（findUnusedFiles）
+│   └── file_delete/SKILL.md      # 批量删除文件（DocumentsUI）：按名称前缀/后缀删除（deleteFilesByName）、按修改时间删除（deleteFilesByTime）、删除显式路径（deleteFiles）
 ├── assets/sherpa/zh14m/          # 纯离线中文语音识别模型（流式 zipformer，int8）：encoder/decoder/joiner/tokens
 └── java/com/fde/aiagent/
     ├── MainActivity.kt              # 纯 UI：选择供应商/填 key、订阅事件、驱动 SVG/日志/错误提示
@@ -169,7 +171,7 @@ FdeAiAgent 侧消费方接入：
 ### 2.5 文件管理操作（file_op：deleteFile / moveFiles / renameFolder / emptyTrash）
 
 文件管理器 `com.android.documentsui` 通过 `DocumentsUiAppFunctionService`
-（`assets/appfunctions.xml` 声明，见 DocumentsUI 源码）对外开放四个文件操作的 AppFunction：
+（`assets/appfunctions.xml` 声明，见 DocumentsUI 源码）对外暴露**十个**文件 AppFunction：
 
 - `deleteFile`：删除（移入系统回收站）文件/文件夹，可在回收站页面恢复，参数 `path`（必填）；
 - `moveFiles`：把源文件夹下的所有文件/子文件夹移动到目标目录，参数 `sourcePath`（必填）、
@@ -177,7 +179,18 @@ FdeAiAgent 侧消费方接入：
   返回 `movedCount`；
 - `renameFolder`：重命名文件/文件夹（对文件同样生效），参数 `path`（必填）+ `newName`
   （必填）；成功返回新路径 `newPath`；
-- `emptyTrash`：清空系统回收站，永久删除其中全部内容，无参数；返回 `deletedCount`。
+- `emptyTrash`：清空系统回收站，永久删除其中全部内容，无参数；返回 `deletedCount`；
+- `findFiles`：按名称/修改时间等过滤条件只读查找文件夹直接子项（只读，见 2.7）；
+- `deleteFilesByName`：删除文件夹下以 `prefix` 开头 / `suffix` 结尾的所有文件（见 2.8）；
+- `deleteFilesByTime`：删除文件夹下最后修改时间在 `before` / `after` 之间的文件（见 2.8）；
+- `findLargeFiles`：递归找出大文件（只读，见 2.7）；
+- `findUnusedFiles`：递归找出 N 天未使用的不常用文件（只读，见 2.7）；
+- `deleteFiles`：删除显式列出的路径列表（见 2.8）。
+
+FdeAiAgent 侧把全部十个都纳入 `AppFunctionCatalog`（`FILE_*` 目录项全部注册），并按职责拆成三个
+Skill：本节的 `file_op` 覆盖前四个（新增 2.7 / 2.8 两个 Skill 覆盖后六个查找与批量删除）。
+
+其中 `file_op` 覆盖的四个函数：
 
 四个函数的路径参数均支持绝对路径（如 `/storage/emulated/0/Desktop/a.txt`），也支持相对
 桌面（Desktop）的名称（如 `a.txt`，等价于 `/storage/emulated/0/Desktop/a.txt`），与
@@ -223,6 +236,37 @@ FdeAiAgent 侧消费方接入：
   `requestPermissions` 申请；拒绝/硬件不可用/模型缺失等都有可读的本地化提示显示在 `tvVoiceStatus`。
 - 交互：聆听中按钮变「⏹ 停止」，再次点击停止并输出结果；识别成功自动填入指令框，
   自动运行开关随 `saveSettings()` 持久化。
+
+### 2.7 查找文件（file_find：findFiles / findLargeFiles / findUnusedFiles）
+
+DocumentsUI 还暴露三个**只读**查找 AppFunction，FdeAiAgent 合并为一个 Skill `file_find`
+（`assets/skills/file_find/SKILL.md`）：
+
+- `findFiles`：参数 `folder`（必填）+ 可选过滤条件（`namePrefix` / `nameSuffix` 名称过滤；
+  `lastMonths` 最近 N 个月修改、`beforeDate` / `afterDate` 修改时间过滤；`limit` 条数），只读
+  扫描 `folder` 的**直接子项**，按修改时间倒序返回 `count` + `matches`（路径列表）；
+- `findLargeFiles`：参数 `path`（必填）+ `minSize`（字节，缺省 100MB）+ `recursive` +
+  `limit`（缺省 50），递归找出大文件并按大小降序返回；
+- `findUnusedFiles`：参数 `path`（必填）+ `days`（缺省 30）+ `limit`（缺省 50），递归找出
+  N 天内未访问/未修改的不常用文件，按最久未使用在前返回。
+
+三个查找只读不写；结果带 `count`，分发器解析 `matches` / `paths` 拼进成功文案。
+
+### 2.8 批量删除文件（file_delete：deleteFilesByName / deleteFilesByTime / deleteFiles）
+
+DocumentsUI 另提供三个删除 AppFunction，FdeAiAgent 合并为一个 Skill `file_delete`
+（`assets/skills/file_delete/SKILL.md`）：
+
+- `deleteFilesByName`：参数 `path`（必填）+ `prefix` / `suffix`（至少一个）+ `recursive`
+  （缺省 true）+ `requireConfirmation`（缺省 true）——删除文件夹下以指定前缀开头/后缀结尾的
+  所有文件；
+- `deleteFilesByTime`：参数 `path`（必填）+ `before` / `after`（至少一个，Unix epoch 毫秒）
+  + `recursive` + `requireConfirmation`——删除最后修改时间满足条件的文件；
+- `deleteFiles`：参数 `paths`（必填，本版本以单个路径字符串下发）+ `requireConfirmation`——
+  删除显式列出的路径。
+
+三者移入系统回收站可恢复；`requireConfirmation` 缺省 true 时删除前弹窗逐项确认，用户取消时
+返回 `cancelled=true`（分发器会反馈给用户）。删除结果带 `deletedCount`（+ 最多 200 条 `paths`）。
 
 ## 3. 一次「打开图片」的执行时序
 

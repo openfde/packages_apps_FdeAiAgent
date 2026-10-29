@@ -12,7 +12,10 @@ import com.fde.aiagent.R
  *    adjustMediaVolume（调节媒体音量）、setDarkTheme（开启/关闭深色主题）、
  *    openApp（按包名/应用名打开应用）；
  *  - 文件管理器 `com.android.documentsui` 对外暴露的文件操作能力：deleteFile（删除移入
- *    回收站）、moveFiles（移动文件夹下的文件）、renameFolder（重命名）、emptyTrash（清空回收站）。
+ *    回收站）、moveFiles（移动文件夹下的文件）、renameFolder（重命名）、emptyTrash（清空回收站）、
+ *    findFiles（按过滤条件查找）、deleteFilesByName（按名称前缀/后缀删除）、
+ *    deleteFilesByTime（按最后修改时间删除）、findLargeFiles（找大文件）、
+ *    findUnusedFiles（找不常用文件）、deleteFiles（删除显式路径列表）。
  *
  * 新增能力时只需在这里加一条 [AppFunction]，Skill / AI 客户端 / 分发器无需改动。
  */
@@ -41,6 +44,12 @@ object AppFunctionCatalog {
     const val FUNC_MOVE_FILES = "moveFiles"
     const val FUNC_RENAME_FOLDER = "renameFolder"
     const val FUNC_EMPTY_TRASH = "emptyTrash"
+    const val FUNC_FIND_FILES = "findFiles"
+    const val FUNC_DELETE_FILES_BY_NAME = "deleteFilesByName"
+    const val FUNC_DELETE_FILES_BY_TIME = "deleteFilesByTime"
+    const val FUNC_FIND_LARGE_FILES = "findLargeFiles"
+    const val FUNC_FIND_UNUSED_FILES = "findUnusedFiles"
+    const val FUNC_DELETE_FILES = "deleteFiles"
 
     /** 在相册中打开指定绝对路径的图片预览。 */
     val OPEN_IMAGE = AppFunction(
@@ -329,11 +338,182 @@ object AppFunctionCatalog {
         requiredParams = listOf(),
     )
 
+    /**
+     * 按过滤条件查找文件夹下的文件（只读）。参数 folder 必填，扫描其**直接子项**：
+     * namePrefix / nameSuffix 按名称过滤，lastMonths（最近 N 个月修改）与 beforeDate / afterDate
+     * （修改时间早于/晚于某个时间点，支持 yyyy-MM-dd / yyyy-MM-dd HH:mm:ss / epoch 毫秒）按时间
+     * 过滤，limit 限制返回条数（按修改时间倒序）。返回 count / matches（路径列表）。
+     * 功能定义见 DocumentsUI 的 assets/appfunctions.xml 与
+     * DocumentsUiAppFunctionService.findFiles。
+     */
+    val FIND_FILES = AppFunction(
+        id = FUNC_FIND_FILES,
+        packageName = DOCUMENTS_PACKAGE,
+        serviceName = DOCUMENTS_SERVICE,
+        description = "按名称/修改时间等过滤条件在文件夹下查找文件（只读，直接子项；findFiles）",
+        descRes = R.string.appfunc_desc_find_files,
+        schemaJson = """
+            {
+              "type": "object",
+              "properties": {
+                "folder": { "type": "string", "description": "要查找的文件夹路径（绝对路径或相对桌面的名称），扫描其直接子项" },
+                "namePrefix": { "type": "string", "description": "名称前缀，仅返回名称以该前缀开头的子项" },
+                "nameSuffix": { "type": "string", "description": "名称后缀，仅返回名称以该后缀结尾的子项" },
+                "lastMonths": { "type": "integer", "description": "最近 N 个月内有修改的子项" },
+                "beforeDate": { "type": "string", "description": "修改时间早于该时间点（yyyy-MM-dd / yyyy-MM-dd HH:mm:ss / epoch 毫秒）" },
+                "afterDate": { "type": "string", "description": "修改时间晚于该时间点（yyyy-MM-dd / yyyy-MM-dd HH:mm:ss / epoch 毫秒）" },
+                "limit": { "type": "integer", "description": "最多返回条数" }
+              },
+              "required": ["folder"]
+            }
+        """.trimIndent(),
+        requiredParams = listOf("folder"),
+    )
+
+    /**
+     * 删除某个文件夹下以指定前缀开头 / 后缀结尾的所有文件（prefix 与 suffix 至少提供一个，两个
+     * 都提供时需同时满足）。recursive 可选、缺省 true（递归子文件夹）；requireConfirmation 可选、
+     * 缺省 true（删除前弹窗逐项确认），传 false 直接删除。返回 deletedCount 与（最多 200 条的）
+     * paths。功能定义见 DocumentsUI 的 assets/appfunctions.xml 与
+     * DocumentsUiAppFunctionService.deleteFilesByName。
+     */
+    val DELETE_FILES_BY_NAME = AppFunction(
+        id = FUNC_DELETE_FILES_BY_NAME,
+        packageName = DOCUMENTS_PACKAGE,
+        serviceName = DOCUMENTS_SERVICE,
+        description = "删除文件夹下以指定前缀开头/后缀结尾的所有文件（移入回收站，可恢复；deleteFilesByName）",
+        descRes = R.string.appfunc_desc_delete_files_by_name,
+        schemaJson = """
+            {
+              "type": "object",
+              "properties": {
+                "path": { "type": "string", "description": "要扫描删除的文件夹路径（绝对路径或相对桌面的名称）" },
+                "prefix": { "type": "string", "description": "名称前缀，删除以该前缀开头的文件" },
+                "suffix": { "type": "string", "description": "名称后缀，删除以该后缀结尾的文件" },
+                "recursive": { "type": "string", "description": "是否递归子文件夹（true/false，缺省 true）" },
+                "requireConfirmation": { "type": "string", "description": "是否删除前弹窗逐项确认（true/false，缺省 true；传 false 直接删除）" }
+              },
+              "required": ["path"]
+            }
+        """.trimIndent(),
+        requiredParams = listOf("path"),
+    )
+
+    /**
+     * 删除某个文件夹下最后修改时间在 before / after（Unix epoch 毫秒）之前/之后的文件
+     * （before 与 after 至少提供一个，都提供时需同时满足）。recursive / requireConfirmation
+     * 同 deleteFilesByName。返回 deletedCount。功能定义见 DocumentsUI 的 assets/appfunctions.xml
+     * 与 DocumentsUiAppFunctionService.deleteFilesByTime。
+     */
+    val DELETE_FILES_BY_TIME = AppFunction(
+        id = FUNC_DELETE_FILES_BY_TIME,
+        packageName = DOCUMENTS_PACKAGE,
+        serviceName = DOCUMENTS_SERVICE,
+        description = "删除文件夹下最后修改时间在指定时间点之前/之后的所有文件（移入回收站，可恢复；deleteFilesByTime）",
+        descRes = R.string.appfunc_desc_delete_files_by_time,
+        schemaJson = """
+            {
+              "type": "object",
+              "properties": {
+                "path": { "type": "string", "description": "要扫描删除的文件夹路径（绝对路径或相对桌面的名称）" },
+                "before": { "type": "integer", "description": "最后修改时间早于该时间戳（Unix epoch 毫秒）" },
+                "after": { "type": "integer", "description": "最后修改时间晚于该时间戳（Unix epoch 毫秒）" },
+                "recursive": { "type": "string", "description": "是否递归子文件夹（true/false，缺省 true）" },
+                "requireConfirmation": { "type": "string", "description": "是否删除前弹窗逐项确认（true/false，缺省 true；传 false 直接删除）" }
+              },
+              "required": ["path"]
+            }
+        """.trimIndent(),
+        requiredParams = listOf("path"),
+    )
+
+    /**
+     * 递归找出某个文件夹下的大文件。minSize（字节，缺省 100MB）为最小文件大小门槛，
+     * recursive 可选（缺省 true），按大小降序、最多返回 limit 个（缺省 50）。结果带
+     * count（命中总数）/ paths / sizes / lastModified / lastAccessed。
+     * 功能定义见 DocumentsUI 的 assets/appfunctions.xml 与
+     * DocumentsUiAppFunctionService.findLargeFiles。
+     */
+    val FIND_LARGE_FILES = AppFunction(
+        id = FUNC_FIND_LARGE_FILES,
+        packageName = DOCUMENTS_PACKAGE,
+        serviceName = DOCUMENTS_SERVICE,
+        description = "递归找出文件夹下的大文件（按大小降序返回；findLargeFiles）",
+        descRes = R.string.appfunc_desc_find_large_files,
+        schemaJson = """
+            {
+              "type": "object",
+              "properties": {
+                "path": { "type": "string", "description": "要扫描的文件夹路径（绝对路径或相对桌面的名称）" },
+                "minSize": { "type": "integer", "description": "最小文件大小（字节），缺省 104857600（100MB）" },
+                "recursive": { "type": "string", "description": "是否递归子文件夹（true/false，缺省 true）" },
+                "limit": { "type": "integer", "description": "最多返回条数，缺省 50" }
+              },
+              "required": ["path"]
+            }
+        """.trimIndent(),
+        requiredParams = listOf("path"),
+    )
+
+    /**
+     * 递归找出某个文件夹下不常用的文件。days（缺省 30）表示最后访问/修改时间早于 N 天前的文件，
+     * 按最久未使用在前排序，最多返回 limit 个（缺省 50）。结果带 count / paths / lastModified /
+     * lastAccessed。功能定义见 DocumentsUI 的 assets/appfunctions.xml 与
+     * DocumentsUiAppFunctionService.findUnusedFiles。
+     */
+    val FIND_UNUSED_FILES = AppFunction(
+        id = FUNC_FIND_UNUSED_FILES,
+        packageName = DOCUMENTS_PACKAGE,
+        serviceName = DOCUMENTS_SERVICE,
+        description = "递归找出 N 天未被访问/修改的不常用文件（最久未使用在前；findUnusedFiles）",
+        descRes = R.string.appfunc_desc_find_unused_files,
+        schemaJson = """
+            {
+              "type": "object",
+              "properties": {
+                "path": { "type": "string", "description": "要扫描的文件夹路径（绝对路径或相对桌面的名称）" },
+                "days": { "type": "integer", "description": "多少天（N）内未访问/未修改视为不常用，缺省 30" },
+                "limit": { "type": "integer", "description": "最多返回条数，缺省 50" }
+              },
+              "required": ["path"]
+            }
+        """.trimIndent(),
+        requiredParams = listOf("path"),
+    )
+
+    /**
+     * 删除显式列出的文件路径（通常是 findFiles / findLargeFiles / findUnusedFiles 的查找结果）。
+     * 参数 paths 必填（本调用方以单个字符串路径下发；也支持 {path} 兼容），requireConfirmation
+     * 可选、缺省 true（删除前弹窗逐项确认），传 false 直接删除。返回 deletedCount / paths。
+     * 功能定义见 DocumentsUI 的 assets/appfunctions.xml 与
+     * DocumentsUiAppFunctionService.deleteFiles。
+     */
+    val DELETE_FILES = AppFunction(
+        id = FUNC_DELETE_FILES,
+        packageName = DOCUMENTS_PACKAGE,
+        serviceName = DOCUMENTS_SERVICE,
+        description = "删除显式列出的文件路径（移入回收站，可恢复；deleteFiles）",
+        descRes = R.string.appfunc_desc_delete_files,
+        schemaJson = """
+            {
+              "type": "object",
+              "properties": {
+                "paths": { "type": "string", "description": "待删除的文件路径（绝对路径或相对桌面的名称）" },
+                "requireConfirmation": { "type": "string", "description": "是否删除前弹窗逐项确认（true/false，缺省 true；传 false 直接删除）" }
+              },
+              "required": ["paths"]
+            }
+        """.trimIndent(),
+        requiredParams = listOf("paths"),
+    )
+
     val ALL: List<AppFunction> = listOf(
         OPEN_IMAGE, PLAY_VIDEO, EDIT_IMAGE,
         OPEN_SETTINGS_PAGE, ADJUST_BRIGHTNESS,
         ADJUST_MEDIA_VOLUME, SET_DARK_THEME, OPEN_APP,
         DELETE_FILE, MOVE_FILES, RENAME_FOLDER, EMPTY_TRASH,
+        FIND_FILES, DELETE_FILES_BY_NAME, DELETE_FILES_BY_TIME,
+        FIND_LARGE_FILES, FIND_UNUSED_FILES, DELETE_FILES,
     )
 
     private val byId: Map<String, AppFunction> = ALL.associateBy { it.id }

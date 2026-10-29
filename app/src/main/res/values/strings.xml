@@ -33,7 +33,7 @@
     <string name="btn_voice_input">🎤 Voice input</string>
     <string name="chk_auto_run">Run automatically after recognition</string>
     <string name="voice_status_default">Click 🎤 to start voice input</string>
-    <string name="available_skills">Available Skills: gallery / file_search / file_op / settings / app_open / task_create</string>
+    <string name="available_skills">Available Skills: gallery / file_search / file_op / settings / app_open / task_create / file_find / file_delete</string>
     <string name="btn_run_agent">Run Agent</string>
     <string name="btn_open_gallery">Open Gallery</string>
     <string name="btn_feature_desc">Features</string>
@@ -149,6 +149,17 @@ file manager apps.
   e.g. empty trash
 □ File search (file_search): search files in a directory by extension/keyword
   e.g. find *.png in /mnt/sdcard/Pictures
+□ File lookup (file_find): find files in a folder by name / modified-time filters,
+  find large files, find files unused for N days (read-only DocumentsUI AppFunctions)
+  e.g. find *.pdf under Desktop
+  e.g. find all files in Desktop/Pictures not modified in the last 3 months
+  e.g. find files larger than 500MB under /mnt/sdcard
+  e.g. find files not used for 30 days under /mnt/sdcard/Downloads
+□ Bulk file delete (file_delete): delete matching files by name prefix / suffix or by
+  last-modified time, or delete an explicitly listed path (moved to trash, recoverable)
+  e.g. delete all .tmp files under Desktop/Temp (recursive)
+  e.g. delete files in Desktop/old modified before 2026-01-01 midnight
+  e.g. delete /mnt/sdcard/Download/a.png
 □ Task record (task_create): write text to a file and read it back for verification
   e.g. record "write weekly report" to /data/local/tmp/task.txt
 
@@ -188,6 +199,9 @@ file manager apps.
     <string name="fn_moved_count">, moved %1$d item(s)</string>
     <string name="fn_deleted_count">, deleted %1$d item(s)</string>
     <string name="fn_output_path">, output: %1$s</string>
+    <string name="fn_find_count">, found %1$d match(es)</string>
+    <string name="fn_paths">, files: %1$s</string>
+    <string name="fn_cancelled_yes">, user cancelled the delete confirmation</string>
     <string name="fn_call_failed">AppFunctions call failed: %1$s</string>
 
     <!-- ================= Skill engine ================= -->
@@ -230,6 +244,12 @@ file manager apps.
     <string name="appfunc_desc_move_files">Move all files / subfolders from a source folder to a destination directory (sourcePath and destinationPath required)</string>
     <string name="appfunc_desc_rename_folder">Rename a file / folder (path and newName required)</string>
     <string name="appfunc_desc_empty_trash">Empty the system trash, permanently delete all contents (no parameters, irreversible)</string>
+    <string name="appfunc_desc_find_files">Find files (read-only) in a folder by name / modified-time filters (findFiles)</string>
+    <string name="appfunc_desc_delete_files_by_name">Delete files in a folder whose names start with prefix / end with suffix (move to trash, recoverable)</string>
+    <string name="appfunc_desc_delete_files_by_time">Delete files in a folder last modified before / after a given epoch time (move to trash, recoverable)</string>
+    <string name="appfunc_desc_find_large_files">Recursively find large files in a folder (minSize bytes, sorted by size descending)</string>
+    <string name="appfunc_desc_find_unused_files">Recursively find files not accessed / modified for N days (least recently used first)</string>
+    <string name="appfunc_desc_delete_files">Delete explicitly listed file paths (move to trash, recoverable)</string>
 
     <!-- ================= AI client ================= -->
     <string name="ai_no_api_key">API Key is not configured. Please select a provider and fill in the key on the UI first.</string>

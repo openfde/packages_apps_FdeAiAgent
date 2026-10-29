@@ -33,7 +33,7 @@
     <string name="btn_voice_input">🎤 语音输入</string>
     <string name="chk_auto_run">识别后自动运行</string>
     <string name="voice_status_default">点击🎤开始语音输入</string>
-    <string name="available_skills">可用 Skill：gallery / file_search / file_op / settings / app_open / task_create</string>
+    <string name="available_skills">可用 Skill：gallery / file_search / file_op / settings / app_open / task_create / file_find / file_delete</string>
     <string name="btn_run_agent">运行智能体</string>
     <string name="btn_open_gallery">打开相册</string>
     <string name="btn_feature_desc">功能说明</string>
@@ -145,6 +145,17 @@ AppFunction 调用相册/设置/文件管理器等应用暴露的真实能力。
   例：清空回收站
 □ 文件搜索（file_search）：按后缀/关键字在目录中搜索文件
   例：在 /mnt/sdcard/Pictures 里找 *.png
+□ 文件查找（file_find）：在文件夹下按名称/修改时间过滤条件查找文件、找大文件、找 N 天未用的
+  不常用文件（DocumentsUI 只读 AppFunction）
+  例：在 桌面 下找 *.pdf
+  例：找 桌面/Pictures 最近 3 个月没改过的所有文件
+  例：找 /mnt/sdcard 下超过 500MB 的文件
+  例：找 /mnt/sdcard/Downloads 里 30 天没用的文件
+□ 批量删除文件（file_delete）：按名称前缀/后缀或按最后修改时间删除匹配文件，或删除显式列出的
+  路径（移入回收站，可恢复）
+  例：删除 桌面/临时 下所有 .tmp 文件（递归）
+  例：删除 桌面/old 里 2026-01-01 之前修改的文件
+  例：删除 /mnt/sdcard/Download/a.png
 □ 任务记录（task_create）：把文本写入文件并回读校验
   例：把“写周报”记录到 /data/local/tmp/task.txt
 
@@ -184,6 +195,9 @@ AppFunction 调用相册/设置/文件管理器等应用暴露的真实能力。
     <string name="fn_moved_count">，已移动 %1$d 项</string>
     <string name="fn_deleted_count">，已删除 %1$d 项</string>
     <string name="fn_output_path">，输出: %1$s</string>
+    <string name="fn_find_count">，找到 %1$d 个匹配</string>
+    <string name="fn_paths">，文件: %1$s</string>
+    <string name="fn_cancelled_yes">，用户在删除确认弹窗中取消了操作</string>
     <string name="fn_call_failed">AppFunctions 调用失败：%1$s</string>
 
     <!-- ================= Skill 引擎 ================= -->
@@ -226,6 +240,12 @@ AppFunction 调用相册/设置/文件管理器等应用暴露的真实能力。
     <string name="appfunc_desc_move_files">把源文件夹下的所有文件/子文件夹移动到目标目录（sourcePath 与 destinationPath 必填，支持绝对路径或相对桌面的名称）</string>
     <string name="appfunc_desc_rename_folder">重命名文件/文件夹（path 与 newName 必填，支持绝对路径或相对桌面的名称）</string>
     <string name="appfunc_desc_empty_trash">清空系统回收站，永久删除回收站中的全部内容（无需参数，此操作不可恢复）</string>
+    <string name="appfunc_desc_find_files">按名称/修改时间等过滤条件在文件夹下查找文件（只读，直接子项）</string>
+    <string name="appfunc_desc_delete_files_by_name">删除文件夹下以指定前缀开头/后缀结尾的所有文件（移入回收站，可恢复）</string>
+    <string name="appfunc_desc_delete_files_by_time">删除文件夹下最后修改时间在指定时间点之前/之后的所有文件（移入回收站，可恢复）</string>
+    <string name="appfunc_desc_find_large_files">递归找出文件夹下的大文件（按大小降序返回）</string>
+    <string name="appfunc_desc_find_unused_files">递归找出 N 天未被访问/修改的不常用文件（最久未使用在前）</string>
+    <string name="appfunc_desc_delete_files">删除显式列出的文件路径（移入回收站，可恢复）</string>
 
     <!-- ================= AI 客户端 ================= -->
     <string name="ai_no_api_key">未配置 API Key，请先在界面上选择供应商并填写 key。</string>
