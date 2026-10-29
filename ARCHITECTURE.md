@@ -29,6 +29,7 @@ app/src/main/
 │   ├── settings/SKILL.md        # 系统设置控制：打开设置页 wifi/display/sound/apps/storage（openSettingsPage）+ 调节屏幕亮度（adjustBrightness）+ 调节媒体音量（adjustMediaVolume）+ 开启/关闭深色模式（setDarkTheme）
 │   ├── app_open/SKILL.md        # 打开应用：按包名或应用名打开（openApp，经 Settings 的 OpenSettingsPageAppFunctionService）
 │   └── task_create/SKILL.md      # 写入任务文件并回读校验（演示权限守卫 + 引用链）
+├── assets/sherpa/zh14m/          # 纯离线中文语音识别模型（流式 zipformer，int8）：encoder/decoder/joiner/tokens
 └── java/com/fde/aiagent/
     ├── MainActivity.kt              # 纯 UI：选择供应商/填 key、订阅事件、驱动 SVG/日志/错误提示
     ├── ai/
@@ -46,6 +47,8 @@ app/src/main/
     │   ├── AppFunction.kt           # AppFunction 目录项 + 调用结果模型
     │   ├── AppFunctionCatalog.kt    # 能力目录
     │   └── AppFunctionDispatcher.kt # 平台 AppFunctionManager 跨应用调用
+    ├── voice/
+    │   └── SherpaVoiceRecognizer.kt # 纯离线中文语音识别（sherpa-onnx JNI + AudioRecord）
     ├── execution/
     │   ├── AgentEvent.kt            # 统一事件 + 流程节点模型
     │   ├── ExecutionBus.kt          # 事件总线 / 监听器
@@ -191,33 +194,35 @@ FdeAiAgent 侧消费方接入：
 - 结果文档 `FileOpResult` 统一解析：`status="ok"`，按 `path` / `newPath` / `movedCount` /
   `deletedCount` 拼进成功文案与用户反馈。
 
-### 2.6 语音输入（Voice Input）
+### 2.6 语音输入（Voice Input · 完全离线）
 
-用户可点击麦克风按钮，对着麦克风说话，系统 SpeechRecognizer 把语音转写成文字后：
+用户可点击麦克风按钮，对着麦克风说话，**sherpa-onnx 纯离线中文识别**把语音转写成文字后：
 
 - 自动填入「智能体指令（Prompt）」输入框（保留原文可先编辑）；
 - 勾选「识别后自动运行」时直接触发 `AgentCoordinator.runAgent`（与手动运行完全一致），
   让语音可以驱动 Skill 引擎执行各种 skill 指令（打开应用/设置、文件操作、相册等）。
 
-中英文支持：
+**完全离线**：识别模型（`sherpa-onnx-streaming-zipformer-zh-14M`，流式 zipformer-transducer，
+中文 int8，约 25MB）内置在 APK assets 的 `assets/sherpa/zh14m/` 下，通过 JNI 在本地推理，
+**不依赖任何网络与系统语音识别服务**，任何设备可用。
 
-- 语言下拉可选「自动检测（中/英）」/「中文（zh-CN）」/「English（en-US）」；
-- 自动模式下同时写入 `EXTRA_LANGUAGE_PREFERENCE=zh-CN`、`EXTRA_LANGUAGE=en-US` 与
-  `EXTRA_SUPPORTED_LANGUAGES=[zh-CN, en-US]`，交给识别器自动匹配语种；
-- 显式选择时只写 `EXTRA_LANGUAGE` / `EXTRA_LANGUAGE_PREFERENCE` 固定语种。
+实现要点：
 
-实现要点（全部在 `MainActivity`，不新增业务层）：
-
+- 原生库：`libs/sherpa-onnx-2.0.1.aar`（sherpa-onnx v2.0.1，仅保留 arm64-v8a / armeabi-v7a
+  的 `libonnxruntime.so` / `libsherpa-onnx-{c,cxx,jni}-api.so`）。Gradle 侧
+  `implementation files('libs/...aar')`；Soong 侧 `android_library_import`（`extract_jni: true`）
+  打进 `android_app` 的 `lib/<abi>/`。
+- 封装类 `voice/SherpaVoiceRecognizer.kt`：
+  - 后台线程懒加载 `OnlineRecognizer(assetManager, config)`，模型路径直接用 assets 相对路径
+    （`sherpa/zh14m/...`），无需拷贝到私有目录；
+  - `AudioRecord` 采集 16kHz 单声道 16-bit PCM，每 100ms 一块 `acceptWaveform(samples, 16000)`
+    喂给流式解码，`onPartial` 实时回显中间文字；
+  - 再次点击麦克风 `stop()` 后 `inputFinished()` + 回溯解码，得到整句最终结果。
+- 语言：纯中文模型（单语），UI 不再提供语言下拉。界面文案全部走 `@string/…`（中/英文资源）。
 - 权限：`AndroidManifest.xml` 声明 `RECORD_AUDIO`（运行时权限），首次点麦克风时
-  `requestPermissions` 申请；`android:hardware.microphone` 非必需。
-- 识别器：懒加载单例 `SpeechRecognizer.createSpeechRecognizer(this)` +
-  `RecognitionListener`；`isRecognitionAvailable` 检测设备是否安装语音识别服务；
-  未安装 / 拒绝录音权限 / 各类 `ERROR_*` 都会转成可读提示显示在 `tvVoiceStatus`。
-- 交互：聆听中按钮变「⏹ 停止」，再次点击 `stopListening`；`onEndOfSpeech` 后自动取
-  `RESULTS_RECOGNITION` 第一条作为结果，语言选择与自动运行开关随 `saveSettings()` 持久化。
-
-> 说明：语音识别依赖设备预装的系统语音识别服务（`android.speech.RecognitionService`）。
-> 若目标镜像未预装该服务，`isRecognitionAvailable` 会返回 false 并提示用户，属于预期行为。
+  `requestPermissions` 申请；拒绝/硬件不可用/模型缺失等都有可读的本地化提示显示在 `tvVoiceStatus`。
+- 交互：聆听中按钮变「⏹ 停止」，再次点击停止并输出结果；识别成功自动填入指令框，
+  自动运行开关随 `saveSettings()` 持久化。
 
 ## 3. 一次「打开图片」的执行时序
 

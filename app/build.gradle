@@ -44,4 +44,7 @@ dependencies {
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0'
     implementation 'com.squareup.okhttp3:okhttp:3.5.0'
     implementation 'com.google.code.gson:gson:2.10'
+
+    // sherpa-onnx 纯离线中文语音识别（AAR 内含 arm64-v8a/armeabi-v7a 原生库 + Java API）
+    implementation files('libs/sherpa-onnx-2.0.1.aar')
 }

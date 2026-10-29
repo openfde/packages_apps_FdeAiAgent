@@ -63,32 +63,25 @@
     <string name="log_flow_finished">完成：%1$s</string>
     <string name="log_flow_failed">失败：%1$s</string>
 
-    <string name="voice_lang_auto">自动检测（中/英）</string>
-    <string name="voice_lang_zh">中文</string>
-    <string name="voice_lang_en">English</string>
     <string name="voice_stop_btn">⏹ 停止</string>
-    <string name="voice_stopped">已停止录音</string>
     <string name="voice_no_permission">未授予录音权限，无法语音输入</string>
-    <string name="voice_no_service">设备未安装可用的语音识别服务</string>
     <string name="voice_listening">正在聆听…请对着麦克风说话</string>
-    <string name="voice_listening_short">正在聆听…</string>
-    <string name="voice_start_failed">无法启动语音识别：%1$s</string>
     <string name="voice_recognizing">识别中…</string>
-    <string name="voice_ready">准备就绪，请开始说话…</string>
     <string name="voice_no_match">未识别到文字，请重试</string>
     <string name="voice_recognized">识别成功：%1$s</string>
     <string name="voice_recognized_confirm">识别成功，请确认指令后运行</string>
 
-    <string name="stt_error_audio">录音失败（无可用麦克风或音频被占用）</string>
-    <string name="stt_error_permissions">缺少录音权限，无法录音</string>
-    <string name="stt_error_network">网络错误，识别失败</string>
-    <string name="stt_error_network_timeout">网络超时，识别失败</string>
-    <string name="stt_error_no_match">未识别到语音，请重试</string>
-    <string name="stt_error_busy">语音识别服务忙碌，请稍候再试</string>
-    <string name="stt_error_server">语音识别服务出错</string>
-    <string name="stt_error_speech_timeout">长时间没有说话，已停止聆听</string>
-    <string name="stt_error_client">客户端错误，无法开始识别</string>
-    <string name="stt_error_other">语音识别失败（错误码 code=%1$d）</string>
+    <!-- 离线语音识别（sherpa-onnx） -->
+    <string name="voice_model_loading">正在加载离线模型…</string>
+    <string name="voice_model_not_ready">离线模型加载中，请稍候再试</string>
+    <string name="voice_recog_partial">识别中：%1$s</string>
+    <string name="sherpa_assets_missing">未找到离线模型资产（%1$s），请确认 assets/sherpa 已打包</string>
+    <string name="sherpa_model_load_failed">加载离线模型失败：%1$s</string>
+    <string name="sherpa_model_not_ready">离线模型尚未加载完成，请稍候再试</string>
+    <string name="sherpa_mic_alloc_failed">无法初始化麦克风（getMinBufferSize 失败）</string>
+    <string name="sherpa_mic_open_failed">无法打开麦克风：%1$s</string>
+    <string name="sherpa_mic_failed">无法初始化麦克风（可能是录音权限或硬件问题）</string>
+    <string name="sherpa_recognize_error">识别过程出错：%1$s</string>
 
     <string name="toast_fill_image_path">请填写图片路径</string>
     <string name="toast_select_provider">请先选择 AI 供应商并填写 API Key</string>

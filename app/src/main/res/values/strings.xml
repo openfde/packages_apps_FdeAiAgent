@@ -63,32 +63,25 @@
     <string name="log_flow_finished">Done: %1$s</string>
     <string name="log_flow_failed">Failed: %1$s</string>
 
-    <string name="voice_lang_auto">Auto detect (CN/EN)</string>
-    <string name="voice_lang_zh">Chinese</string>
-    <string name="voice_lang_en">English</string>
     <string name="voice_stop_btn">⏹ Stop</string>
-    <string name="voice_stopped">Recording stopped</string>
     <string name="voice_no_permission">Microphone permission not granted, cannot use voice input</string>
-    <string name="voice_no_service">No speech recognition service available on this device</string>
     <string name="voice_listening">Listening… please speak to the microphone</string>
-    <string name="voice_listening_short">Listening…</string>
-    <string name="voice_start_failed">Could not start speech recognition: %1$s</string>
     <string name="voice_recognizing">Recognizing…</string>
-    <string name="voice_ready">Ready, please speak…</string>
     <string name="voice_no_match">No text recognized, please try again</string>
     <string name="voice_recognized">Recognized: %1$s</string>
     <string name="voice_recognized_confirm">Recognized, please confirm the instruction then run</string>
 
-    <string name="stt_error_audio">Audio recording failed (no usable microphone or audio is busy)</string>
-    <string name="stt_error_permissions">Missing recording permission, cannot record</string>
-    <string name="stt_error_network">Network error, recognition failed</string>
-    <string name="stt_error_network_timeout">Network timeout, recognition failed</string>
-    <string name="stt_error_no_match">No speech recognized, please try again</string>
-    <string name="stt_error_busy">Speech recognition service is busy, try again later</string>
-    <string name="stt_error_server">Speech recognition service error</string>
-    <string name="stt_error_speech_timeout">No speech for a long time, stopped listening</string>
-    <string name="stt_error_client">Client error, cannot start recognition</string>
-    <string name="stt_error_other">Speech recognition failed (code %1$d)</string>
+    <!-- Offline speech recognition (sherpa-onnx) -->
+    <string name="voice_model_loading">Loading offline model…</string>
+    <string name="voice_model_not_ready">Offline model is still loading, please try again later</string>
+    <string name="voice_recog_partial">Recognizing: %1$s</string>
+    <string name="sherpa_assets_missing">Offline model assets (%1$s) not found, please ensure assets/sherpa is packaged</string>
+    <string name="sherpa_model_load_failed">Failed to load offline model: %1$s</string>
+    <string name="sherpa_model_not_ready">Offline model is not loaded yet, please try again later</string>
+    <string name="sherpa_mic_alloc_failed">Could not initialize the microphone (getMinBufferSize failed)</string>
+    <string name="sherpa_mic_open_failed">Could not open the microphone: %1$s</string>
+    <string name="sherpa_mic_failed">Could not initialize the microphone (recording permission or hardware issue)</string>
+    <string name="sherpa_recognize_error">Recognition failed: %1$s</string>
 
     <string name="toast_fill_image_path">Please fill in the image path</string>
     <string name="toast_select_provider">Please select an AI provider and fill in the API Key</string>

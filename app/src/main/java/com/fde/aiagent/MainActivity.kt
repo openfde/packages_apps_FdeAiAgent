@@ -3,13 +3,9 @@ package com.fde.aiagent
 import android.Manifest
 import android.app.Activity
 import android.content.Context
-import android.content.Intent
 import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.os.Bundle
-import android.speech.RecognitionListener
-import android.speech.RecognizerIntent
-import android.speech.SpeechRecognizer
 import android.view.View
 import android.webkit.WebSettings
 import android.webkit.WebView
@@ -28,6 +24,7 @@ import com.fde.aiagent.execution.AgentCoordinator
 import com.fde.aiagent.execution.AgentEvent
 import com.fde.aiagent.execution.ExecutionListener
 import com.fde.aiagent.ui.SvgStateRenderer
+import com.fde.aiagent.voice.SherpaVoiceRecognizer
 
 /**
  * FDE AI Agent —— 五层架构的界面入口。
@@ -53,7 +50,6 @@ class MainActivity : Activity(), ExecutionListener {
 
     private lateinit var spProvider: Spinner
     private lateinit var spSettingsPage: Spinner
-    private lateinit var spVoiceLang: Spinner
     private lateinit var chkAutoRun: CheckBox
     private lateinit var btnVoiceInput: Button
     private lateinit var tvVoiceStatus: TextView
@@ -73,9 +69,8 @@ class MainActivity : Activity(), ExecutionListener {
     private lateinit var prefs: SharedPreferences
     private lateinit var coordinator: AgentCoordinator
 
-    /** 语音识别器（系统 SpeechRecognizer + RecognitionListener）。 */
-    private var speechRecognizer: SpeechRecognizer? = null
-    private var recognizing = false
+    /** 纯离线中文语音识别（sherpa-onnx，模型内置在 assets）。 */
+    private var voiceRecognizer: SherpaVoiceRecognizer? = null
 
     companion object {
         private const val TAG = "FdeAiAgent"
@@ -87,7 +82,6 @@ class MainActivity : Activity(), ExecutionListener {
         private const val KEY_IMAGE_PATH = "image_path"
         private const val KEY_VIDEO_PATH = "video_path"
         private const val KEY_PROMPT = "prompt"
-        private const val KEY_VOICE_LANG = "voice_lang"
         private const val KEY_VOICE_AUTORUN = "voice_autorun"
         private const val REQ_RECORD_AUDIO = 1001
 
@@ -101,13 +95,6 @@ class MainActivity : Activity(), ExecutionListener {
             "apps" to R.string.settings_page_name_apps,
             "storage" to R.string.settings_page_name_storage,
         )
-
-        /** 语音识别语言：key -> 显示名资源。auto=自动检测中/英。 */
-        private val VOICE_LANGS = listOf(
-            "auto" to R.string.voice_lang_auto,
-            "zh-CN" to R.string.voice_lang_zh,
-            "en-US" to R.string.voice_lang_en,
-        )
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -119,7 +106,6 @@ class MainActivity : Activity(), ExecutionListener {
         prefs = getSharedPreferences(PREFS, Context.MODE_PRIVATE)
         spProvider = findViewById(R.id.spProvider)
         spSettingsPage = findViewById(R.id.spSettingsPage)
-        spVoiceLang = findViewById(R.id.spVoiceLang)
         chkAutoRun = findViewById(R.id.chkAutoRun)
         btnVoiceInput = findViewById(R.id.btnVoiceInput)
         tvVoiceStatus = findViewById(R.id.tvVoiceStatus)
@@ -154,13 +140,6 @@ class MainActivity : Activity(), ExecutionListener {
             },
         ).apply { setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item) }
 
-        // 语音识别语言选择：自动检测（中/英）/ 中文 / English
-        spVoiceLang.adapter = ArrayAdapter(
-            this,
-            android.R.layout.simple_spinner_item,
-            VOICE_LANGS.map { (_, nameRes) -> getString(nameRes) },
-        ).apply { setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item) }
-
         // 恢复上次保存的配置
         val savedProvider = prefs.getString(KEY_PROVIDER, AiProvider.DEEPSEEK.id)!!
         val providerIndex = AiProvider.indexOf(savedProvider).coerceAtLeast(0)
@@ -173,9 +152,6 @@ class MainActivity : Activity(), ExecutionListener {
         editPrompt.setText(prefs.getString(KEY_PROMPT, getString(R.string.default_prompt)))
 
         // 恢复语音输入配置
-        val savedVoiceLang = prefs.getString(KEY_VOICE_LANG, "auto")!!
-        val voiceLangIndex = VOICE_LANGS.indexOfFirst { it.first == savedVoiceLang }.coerceAtLeast(0)
-        spVoiceLang.setSelection(voiceLangIndex)
         chkAutoRun.isChecked = prefs.getBoolean(KEY_VOICE_AUTORUN, true)
 
         spProvider.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
@@ -189,20 +165,16 @@ class MainActivity : Activity(), ExecutionListener {
             }
         }
 
-        // 语音识别语言选择变化即保存；自动运行开关同理
-        spVoiceLang.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
-                saveSettings()
-            }
-
-            override fun onNothingSelected(parent: AdapterView<*>?) = Unit
-        }
+        // 自动运行开关变化即保存
         chkAutoRun.setOnCheckedChangeListener { _, _ -> saveSettings() }
 
         setupWebView()
 
         coordinator = AgentCoordinator(this)
         coordinator.addListener(this)
+
+        // 纯离线语音识别：后台预加载 sherpa-onnx 中文模型
+        voiceRecognizer = SherpaVoiceRecognizer(this).also { it.load(voiceListener) }
 
         findViewById<Button>(R.id.btnRunAgent).setOnClickListener { runAgent() }
         btnVoiceInput.setOnClickListener { toggleVoiceInput() }
@@ -240,23 +212,68 @@ class MainActivity : Activity(), ExecutionListener {
     override fun onDestroy() {
         super.onDestroy()
         coordinator.removeListener(this)
-        speechRecognizer?.destroy()
-        speechRecognizer = null
+        voiceRecognizer?.release()
+        voiceRecognizer = null
     }
 
-    // ---------------- 语音输入 ----------------
+    // ---------------- 语音输入（完全离线 · sherpa-onnx 中文识别） ----------------
 
-    /** 麦克风按钮：点击开始聆听，再次点击停止。 */
+    /** 识别回调（所有回调都在主线程，由 [SherpaVoiceRecognizer] 保证）。 */
+    private val voiceListener = object : SherpaVoiceRecognizer.Listener {
+        override fun onModelLoading() {
+            tvVoiceStatus.text = getString(R.string.voice_model_loading)
+        }
+
+        override fun onModelReady() {
+            tvVoiceStatus.text = getString(R.string.voice_status_default)
+        }
+
+        override fun onModelError(message: String) {
+            tvVoiceStatus.text = message
+            toast(message)
+        }
+
+        override fun onPartial(text: String) {
+            tvVoiceStatus.text = if (text.isBlank()) {
+                getString(R.string.voice_listening)
+            } else {
+                getString(R.string.voice_recog_partial, text)
+            }
+        }
+
+        override fun onResult(text: String) {
+            handleRecognized(text)
+        }
+
+        override fun onError(message: String) {
+            btnVoiceInput.text = getString(R.string.btn_voice_input)
+            tvVoiceStatus.text = message
+            toast(message)
+        }
+    }
+
+    /** 麦克风按钮：模型就绪后点击开始录音识别；再点一次停止并输出整句结果。 */
     private fun toggleVoiceInput() {
-        if (recognizing) {
-            stopListening(getString(R.string.voice_stopped))
+        val recognizer = voiceRecognizer ?: return
+        if (recognizer.isRecording()) {
+            recognizer.stop()
+            btnVoiceInput.text = getString(R.string.btn_voice_input)
+            tvVoiceStatus.text = getString(R.string.voice_recognizing)
+            return
+        }
+        if (recognizer.isLoading() || !recognizer.isReady()) {
+            val msg = getString(R.string.voice_model_not_ready)
+            tvVoiceStatus.text = msg
+            toast(msg)
             return
         }
         if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
             requestPermissions(arrayOf(Manifest.permission.RECORD_AUDIO), REQ_RECORD_AUDIO)
             return
         }
-        startListening()
+        recognizer.start(voiceListener)
+        btnVoiceInput.text = getString(R.string.voice_stop_btn)
+        tvVoiceStatus.text = getString(R.string.voice_listening)
     }
 
     override fun onRequestPermissionsResult(
@@ -265,118 +282,31 @@ class MainActivity : Activity(), ExecutionListener {
         grantResults: IntArray,
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode == REQ_RECORD_AUDIO) {
-            if (grantResults.firstOrNull() == PackageManager.PERMISSION_GRANTED) {
-                startListening()
+        if (requestCode != REQ_RECORD_AUDIO) return
+        if (grantResults.firstOrNull() == PackageManager.PERMISSION_GRANTED) {
+            val recognizer = voiceRecognizer
+            if (recognizer != null && recognizer.isReady()) {
+                recognizer.start(voiceListener)
+                btnVoiceInput.text = getString(R.string.voice_stop_btn)
+                tvVoiceStatus.text = getString(R.string.voice_listening)
             } else {
-                tvVoiceStatus.text = getString(R.string.voice_no_permission)
-                toast(getString(R.string.voice_no_permission))
+                val msg = getString(R.string.voice_model_not_ready)
+                tvVoiceStatus.text = msg
+                toast(msg)
             }
-        }
-    }
-
-    /** 启动系统 SpeechRecognizer 聆听。 */
-    private fun startListening() {
-        if (!SpeechRecognizer.isRecognitionAvailable(this)) {
-            tvVoiceStatus.text = getString(R.string.voice_no_service)
-            toast(getString(R.string.voice_no_service))
-            return
-        }
-        val lang = selectedVoiceLanguage()
-        val recognizer = speechRecognizer
-            ?: SpeechRecognizer.createSpeechRecognizer(this).also {
-                it.setRecognitionListener(recognitionListener)
-                speechRecognizer = it
-            }
-
-        val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
-            putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-            putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
-            putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE, packageName)
-            putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 5)
-            // 自动检测（中/英）：显式列出支持的两种语言，其余交给识别器匹配
-            if (lang == "auto") {
-                putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, "zh-CN")
-                putExtra(RecognizerIntent.EXTRA_LANGUAGE, "en-US")
-                putExtra(RecognizerIntent.EXTRA_SUPPORTED_LANGUAGES, arrayOf("zh-CN", "en-US"))
-            } else {
-                putExtra(RecognizerIntent.EXTRA_LANGUAGE, lang)
-                putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, lang)
-            }
-        }
-
-        recognizing = true
-        btnVoiceInput.text = getString(R.string.voice_stop_btn)
-        tvVoiceStatus.text = getString(R.string.voice_listening)
-        try {
-            recognizer.startListening(intent)
-        } catch (e: Throwable) {
-            recognizing = false
-            val msg = getString(R.string.voice_start_failed, e.message)
-            btnVoiceInput.text = getString(R.string.btn_voice_input)
+        } else {
+            val msg = getString(R.string.voice_no_permission)
             tvVoiceStatus.text = msg
             toast(msg)
         }
     }
 
-    private fun selectedVoiceLanguage(): String =
-        VOICE_LANGS.getOrNull(spVoiceLang.selectedItemPosition)?.first ?: "auto"
-
-    /** 主动停止聆听（不取消，等待结果回调）。 */
-    private fun stopListening(msg: String) {
-        speechRecognizer?.stopListening()
-        recognizing = false
-        btnVoiceInput.text = getString(R.string.btn_voice_input)
-        tvVoiceStatus.text = msg
-    }
-
-    private val recognitionListener = object : RecognitionListener {
-        override fun onReadyForSpeech(params: Bundle?) {
-            runOnUiThread { tvVoiceStatus.text = getString(R.string.voice_ready) }
-        }
-
-        override fun onBeginningOfSpeech() {
-            runOnUiThread { tvVoiceStatus.text = getString(R.string.voice_listening_short) }
-        }
-
-        override fun onRmsChanged(rmsdB: Float) = Unit
-
-        override fun onBufferReceived(buffer: ByteArray?) = Unit
-
-        override fun onEndOfSpeech() {
-            runOnUiThread { tvVoiceStatus.text = getString(R.string.voice_recognizing) }
-        }
-
-        override fun onError(error: Int) {
-            runOnUiThread {
-                recognizing = false
-                btnVoiceInput.text = getString(R.string.btn_voice_input)
-                tvVoiceStatus.text = errorText(error)
-                if (error != SpeechRecognizer.ERROR_CLIENT) toast(tvVoiceStatus.text.toString())
-            }
-        }
-
-        override fun onResults(results: Bundle?) {
-            runOnUiThread {
-                recognizing = false
-                btnVoiceInput.text = getString(R.string.btn_voice_input)
-                val matches = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
-                    ?: return@runOnUiThread
-                handleRecognized(matches.mapNotNull { it })
-            }
-        }
-
-        override fun onPartialResults(partialResults: Bundle?) = Unit
-
-        override fun onEvent(eventType: Int, params: Bundle?) = Unit
-    }
-
     /** 识别出文字：填入指令框，可按需自动运行智能体。 */
-    private fun handleRecognized(matches: List<String>) {
-        val text = matches.firstOrNull { it.isNotBlank() }
-        if (text == null) {
-            tvVoiceStatus.text = getString(R.string.voice_no_match)
-            toast(getString(R.string.voice_no_match))
+    private fun handleRecognized(text: String) {
+        if (text.isBlank()) {
+            val msg = getString(R.string.voice_no_match)
+            tvVoiceStatus.text = msg
+            toast(msg)
             return
         }
         editPrompt.setText(text)
@@ -384,19 +314,6 @@ class MainActivity : Activity(), ExecutionListener {
         appendLog(getString(R.string.log_voice_input, text))
         tvVoiceStatus.text = getString(R.string.voice_recognized, text)
         if (chkAutoRun.isChecked) runAgent() else toast(getString(R.string.voice_recognized_confirm))
-    }
-
-    private fun errorText(code: Int): String = when (code) {
-        SpeechRecognizer.ERROR_AUDIO -> getString(R.string.stt_error_audio)
-        SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS -> getString(R.string.stt_error_permissions)
-        SpeechRecognizer.ERROR_NETWORK -> getString(R.string.stt_error_network)
-        SpeechRecognizer.ERROR_NETWORK_TIMEOUT -> getString(R.string.stt_error_network_timeout)
-        SpeechRecognizer.ERROR_NO_MATCH -> getString(R.string.stt_error_no_match)
-        SpeechRecognizer.ERROR_RECOGNIZER_BUSY -> getString(R.string.stt_error_busy)
-        SpeechRecognizer.ERROR_SERVER -> getString(R.string.stt_error_server)
-        SpeechRecognizer.ERROR_SPEECH_TIMEOUT -> getString(R.string.stt_error_speech_timeout)
-        SpeechRecognizer.ERROR_CLIENT -> getString(R.string.stt_error_client)
-        else -> getString(R.string.stt_error_other, code)
     }
 
     /** 切换供应商时：Base URL 仅在选择“自定义”时显示；同步右上角 model 信息。 */
@@ -543,7 +460,6 @@ class MainActivity : Activity(), ExecutionListener {
             .putString(KEY_IMAGE_PATH, editImagePath.text.toString().trim())
             .putString(KEY_VIDEO_PATH, editVideoPath.text.toString().trim())
             .putString(KEY_PROMPT, editPrompt.text.toString().trim())
-            .putString(KEY_VOICE_LANG, selectedVoiceLanguage())
             .putBoolean(KEY_VOICE_AUTORUN, chkAutoRun.isChecked)
             .apply()
     }
