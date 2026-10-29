@@ -15,6 +15,7 @@ import com.fde.aiagent.execution.asDone
 import com.fde.aiagent.execution.asFailed
 import com.fde.aiagent.execution.asRunning
 import com.fde.aiagent.execution.asSkipped
+import java.util.concurrent.atomic.AtomicInteger
 
 /** Skill 执行结果。 */
 data class SkillRunResult(
@@ -44,11 +45,16 @@ class SkillEngine(
 
     private val appContext = context.applicationContext
 
+    /** 每次 execute() 的自增序号，用于给流程节点生成唯一 id（一次流程可能执行多个 Skill / 重复 Skill）。 */
+    private val runSeq = AtomicInteger(0)
+
     suspend fun execute(skill: Skill, input: Map<String, String>, bus: ExecutionBus): SkillRunResult {
+        val runId = runSeq.incrementAndGet()
         val outputs = LinkedHashMap<String, String>()
         for ((index, step) in skill.steps.withIndex()) {
             val node = FlowNode(
-                id = step.id,
+                // 前缀 skill 名与本次执行序号，避免多次执行 / 重复 Skill 在 SVG 面板上节点 id 冲突互相覆盖。
+                id = "${skill.id}#$runId/${step.id}",
                 label = step.description.ifEmpty { step.id },
                 kind = step.kind(),
                 status = FlowNodeStatus.PENDING,

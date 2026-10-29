@@ -8,7 +8,7 @@
 
 | 层 | 主要类 | 职责 |
 | --- | --- | --- |
-| 意图/规划 | `ai/AiProvider.kt`、`ai/AiClient.kt` | 多供应商 LLM 客户端（OpenAI 兼容 + Gemini）；理解用户意图；从 Skill 目录中选择 Skill 并填写入参（`run_skill` 工具），或直接回答 |
+| 意图/规划 | `ai/AiProvider.kt`、`ai/AiClient.kt` | 多供应商 LLM 客户端（OpenAI 兼容 + Gemini）；理解用户意图；从 Skill 目录中选择一个或多个 Skill 并填写入参（`run_skills` 工具，tasks 数组可承载一次请求里的多条指令），或直接回答 |
 | Skill | `skill/SkillRegistry.kt`、`skill/SkillEngine.kt` | 装载 `assets/skills/**/SKILL.md`；把多个工具编排成可复用的多步骤流程 |
 | AppFunctions | `appfunctions/AppFunctionCatalog.kt`、`appfunctions/AppFunctionDispatcher.kt` | 登记/分发 Android 应用暴露的真实能力（相册 openImage / playVideo / editImage、系统设置 openSettingsPage / adjustBrightness） |
 | 权限与执行 | `execution/PermissionGuard.kt`、`execution/AgentCoordinator.kt` | 统一安全把关 + 流水线总协调 |
@@ -278,10 +278,12 @@ MainActivity.btnRunAgent
        │    按选中的供应商切换协议:
        │      OpenAI 兼容（DeepSeek/千问/智谱/Kimi）→ chat/completions + tools
        │      Gemini → generateContent + functionDeclarations
-       │    模型决策:
-       │      ─ run_skill(skill=gallery, inputs={path,title,video,filter,...})
+       │    模型决策（一次请求可含多条指令，run_skills 的 tasks 数组一次承载多个任务）:
+       │      ─ run_skills(tasks=[{skill=gallery, inputs={path,title,video,filter,...}}, ...])
        │      ─ 或直接回答（闲聊/无匹配）
-       ├─ SkillEngine.execute(gallery, inputs, bus)
+       ├─ AgentCoordinator 按顺序执行每个任务:
+       │    SkillEngine.execute(gallery, inputs, bus)   # 每个 Skill 任务独立执行、独立汇总
+       │    SkillEngine.execute(settings, inputs, bus)  # 例：关闭深色模式 + 亮度调到最高时可能拆成多个任务
        │    1. check_platform   -> PermissionGuard.checkAppFunctionExecution()
        │    2. open_image       -> run_when('$input.filter == ""') 满足则
        │                            AppFunctionDispatcher.dispatch(openImage,{path,title})

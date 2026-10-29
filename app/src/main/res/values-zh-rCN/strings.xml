@@ -101,7 +101,10 @@
     <string name="plan_node_label">规划任务（理解用户意图）</string>
     <string name="plan_done_direct_answer">无需执行 Skill，直接回答</string>
     <string name="plan_done_choose_skill">选择 Skill: %1$s</string>
+    <string name="plan_done_choose_skills">规划完成，将依次执行 %1$d 个 Skill: %2$s</string>
     <string name="log_execute_skill">→ 执行 Skill: %1$s</string>
+    <string name="log_execute_skill_multi">→ 执行 Skill %1$d/%2$d: %3$s</string>
+    <string name="log_multi_result">→ 全部 %1$d 个任务执行完毕，汇总：%2$s</string>
     <string name="unknown_skill">未知 Skill</string>
     <string name="node_failed_unknown_skill">未知 Skill: %1$s</string>
     <string name="flow_failed_unknown_skill">模型选择了不存在的 Skill: %1$s</string>
@@ -136,6 +139,7 @@ AppFunction 调用相册/设置/文件管理器等应用暴露的真实能力。
   例：把屏幕调亮一点（dim 调暗）
   例：把声音调大 50%（volume_down 调小）
   例：静音 / 取消静音 / 打开深色模式 / 关闭深色模式
+  例：关闭深色模式并把亮度调到最高（支持一次执行多条指令）
 □ 打开应用（app_open）：按包名或应用名打开任意应用
   例：打开设置 / 打开相册 / 打开 com.android.settings
 □ 文件管理（file_op）：删除（移入回收站）、移动、重命名、清空回收站
@@ -255,14 +259,15 @@ AppFunction 调用相册/设置/文件管理器等应用暴露的真实能力。
     <string name="ai_missing_skill_param">模型返回的 %1$s 缺少 skill 参数。</string>
     <string name="ai_http_error">AI HTTP %1$d: %2$s</string>
     <string name="ai_gemini_http_error">Gemini HTTP %1$d: %2$s</string>
-    <string name="ai_plan_log">← 模型规划: skill=%1$s inputs=%2$s</string>
+    <string name="ai_plan_log">← 模型规划: %1$s</string>
     <string name="ai_post_log">→ POST %1$s (provider=%2$s, model=%3$s)</string>
     <string name="ai_prompt_intro">你是一个 Android 智能体，负责理解用户意图并把任务规划到已注册的 Skill 上执行。\n可用 Skill 如下：\n</string>
     <string name="ai_prompt_skill_item">%1$d. %2$s — %3$s\n</string>
     <string name="ai_prompt_skill_params">   参数: %1$s\n</string>
-    <string name="ai_prompt_rules">规则：\n- 当用户请求与某个 Skill 匹配时，只允许调用 run_skill 工具，并且 skill 必须是上面列表中的 id。\n- 尽力根据用户语气把 inputs 参数填全；缺少关键参数时用合理默认值；确实缺失再要求用户补充。\n- 如果用户只是闲聊、提问或没有匹配的 Skill（例如「需要登录、发消息」这类），就直接用中文回答，绝对不要编造 Skill 或工具。\n- 路径必须是设备上的绝对路径。</string>
+    <string name="ai_prompt_rules">规则：\n- 每个用户指令都对应一个 Skill 任务（skill + inputs）：skill 必须是列表中的 id，inputs 按该 Skill 声明的参数填写。\n- 一次请求可能包含多条指令（例如「关闭深色模式并把亮度调到最高」），请把每条指令对应的任务一次性全部放进 run_skills 工具的 tasks 数组返回（不要只返回第一个，也不要拆成多次对话）；执行时会按数组顺序依次执行。\n- 有匹配的 Skill 任务时只调用 run_skills 工具；仅当用户只是闲聊、提问或没有任何 Skill 匹配（例如「需要登录、发消息」这类）时才直接回答，绝对不要编造 Skill 或工具。\n- 根据用户语气把每个任务的 inputs 填全；缺少关键参数时用合理默认值；确实缺失再要求用户补充。\n- 亮度调节：把亮度调到最高用 action=brighten、step=100，调到最低用 action=dim、step=100；音量同理，volume_step=100 为最大。\n- 路径必须是设备上的绝对路径。</string>
     <string name="tool_skill_desc">要执行的 Skill id</string>
-    <string name="tool_run_skill_desc">执行一个已注册的多步 Skill 来完成任务</string>
+    <string name="tool_tasks_desc">需要执行的 Skill 任务列表；每个元素是一个对象（含 skill 与 inputs 两个字段），一条用户指令对应一个任务。只要请求包含可执行的指令，就必须把所有任务一次性列在这里。</string>
+    <string name="tool_run_skill_desc">按用户指令执行一个或多个已注册的多步 Skill（tasks 数组可在一次调用里承载多条指令）</string>
 
     <!-- ================= SVG 状态面板 ================= -->
     <string name="svg_title">执行流程（SVG 状态面板）</string>

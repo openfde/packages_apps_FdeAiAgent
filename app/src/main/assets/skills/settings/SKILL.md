@@ -1,7 +1,7 @@
 ---
 name: settings
-version: 1.2.0
-description: 控制系统设置：打开指定的系统设置页面（wifi / display / sound / apps / storage），调节屏幕亮度（调亮 brighten / 调暗 dim）、调节媒体音量（调高 volume_up / 调低 volume_down / 静音 mute / 取消静音 unmute）、开启或关闭深色模式（on / off），通过系统设置应用 com.android.settings 暴露的 AppFunction openSettingsPage / adjustBrightness / adjustMediaVolume / setDarkTheme 实现
+version: 1.3.0
+description: 控制系统设置：打开指定的系统设置页面（wifi / display / sound / apps / storage），调节屏幕亮度（调亮 brighten / 调暗 dim，调到最高用 action=brighten+step=100、最低用 action=dim+step=100）、调节媒体音量（调高 volume_up / 调低 volume_down / 静音 mute / 取消静音 unmute，音量最大用 volume_step=100）、开启或关闭深色模式（on / off），通过系统设置应用 com.android.settings 暴露的 AppFunction openSettingsPage / adjustBrightness / adjustMediaVolume / setDarkTheme 实现；一次请求可同时设置亮度与深色模式等多项独立操作
 tags:
   - settings
   - system
@@ -188,6 +188,10 @@ cmd app_function execute-app-function \
 
 - 打开设置页 / 调节亮度 / 调节音量 / 深色模式是相互独立的操作：填了哪个参数就执行对应的
   功能，未填写的操作对应的步骤会被跳过（标记为 SKIPPED）。
+- 一次用户请求里可以同时包含多个独立操作（例如「关闭深色模式并把亮度调到最高」），
+  此时把 `dark_theme=off` 与 `action=brighten, step=100` 一并填到同一次调用即可。
+- “把亮度调到最高 / 最低”用 `action=brighten/dim` 且 `step=100`（亮度做百分比的
+  clamp，一次即可到最高 / 最低）；“把音量调到最大 / 最小”同理用 `volume_step=100`。
 - `page` 取值限定为：`wifi` / `display` / `sound` / `apps` / `storage`；设置侧对未知
   `page` 会返回 `ok=false, error="unsupported_page"`，分发层会将其识别为失败并提示。
 - 亮度 `action` 取值限定为：`brighten` / `dim`；音量 `action`（即 `volume_action`）取值限定

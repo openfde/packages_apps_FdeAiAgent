@@ -101,7 +101,10 @@
     <string name="plan_node_label">Plan the task (understand user intent)</string>
     <string name="plan_done_direct_answer">No need to run a Skill, answer directly</string>
     <string name="plan_done_choose_skill">Selected Skill: %1$s</string>
+    <string name="plan_done_choose_skills">Plan done, will run %1$d Skills in order: %2$s</string>
     <string name="log_execute_skill">→ Execute Skill: %1$s</string>
+    <string name="log_execute_skill_multi">→ Execute Skill %1$d/%2$d: %3$s</string>
+    <string name="log_multi_result">→ All %1$d tasks executed, summary: %2$s</string>
     <string name="unknown_skill">Unknown Skill</string>
     <string name="node_failed_unknown_skill">Unknown Skill: %1$s</string>
     <string name="flow_failed_unknown_skill">The model selected a Skill that does not exist: %1$s</string>
@@ -140,6 +143,7 @@ file manager apps.
   e.g. make the screen a bit brighter (dim makes it darker)
   e.g. turn the volume up by 50% (volume_down makes it smaller)
   e.g. mute / unmute / enable dark mode / disable dark mode
+  e.g. disable dark mode and set brightness to maximum (multiple instructions in one run)
 □ Open an app (app_open): open any app by package name or app name
   e.g. open Settings / open Gallery / open com.android.settings
 □ File management (file_op): delete (move to trash), move, rename, empty trash
@@ -259,14 +263,15 @@ file manager apps.
     <string name="ai_missing_skill_param">The %1$s returned by the model is missing the skill parameter.</string>
     <string name="ai_http_error">AI HTTP %1$d: %2$s</string>
     <string name="ai_gemini_http_error">Gemini HTTP %1$d: %2$s</string>
-    <string name="ai_plan_log">← Model plan: skill=%1$s inputs=%2$s</string>
+    <string name="ai_plan_log">← Model plan: %1$s</string>
     <string name="ai_post_log">→ POST %1$s (provider=%2$s, model=%3$s)</string>
     <string name="ai_prompt_intro">You are an Android agent that understands user intent and plans tasks onto registered Skills.\nAvailable Skills:\n</string>
     <string name="ai_prompt_skill_item">%1$d. %2$s — %3$s\n</string>
     <string name="ai_prompt_skill_params">   Params: %1$s\n</string>
-    <string name="ai_prompt_rules">Rules:\n- When the user request matches a Skill, only call the run_skill tool, and the skill must be an id from the list above.\n- Try to fill in the inputs completely based on the user wording; use reasonable defaults when important ones are missing; only ask the user to supply when truly missing.\n- If the user is just chatting, asking questions, or no Skill matches (e.g. "log in", "send a message"), answer directly and never invent Skills or tools.\n- Paths must be absolute paths on the device.</string>
+    <string name="ai_prompt_rules">Rules:\n- Each user instruction maps to one Skill task (skill + inputs): skill must be an id from the list above, inputs follow the declared parameters of that Skill.\n- A single request may contain multiple instructions (e.g. "turn off dark mode and set brightness to maximum"): put every task in the tasks array of the run_skills tool in one call (do not return only the first one, and do not split into multiple turns). Tasks are executed in array order.\n- When skill tasks match, only call the run_skills tool; answer directly only when the user is just chatting, asking questions, or no Skill matches (e.g. "log in", "send a message") — never invent Skills or tools.\n- Try to fill in the inputs completely based on the user wording; use reasonable defaults when important ones are missing; only ask the user to supply when truly missing.\n- Brightness: to set the maximum use action=brighten, step=100; minimum use action=dim, step=100. Volume works the same way: volume_step=100 is maximum.\n- Paths must be absolute paths on the device.</string>
     <string name="tool_skill_desc">The Skill id to execute</string>
-    <string name="tool_run_skill_desc">Execute a registered multi-step Skill to complete the task</string>
+    <string name="tool_tasks_desc">The list of Skill tasks to execute. Each element is an object with skill and inputs fields, and one user instruction maps to one task. Whenever the request contains executable instructions, you MUST list all tasks here in a single call.</string>
+    <string name="tool_run_skill_desc">Execute one or more registered multi-step Skills according to the user instructions (the tasks array can carry multiple instructions in a single call)</string>
 
     <!-- ================= SVG state panel ================= -->
     <string name="svg_title">Execution Flow (SVG Panel)</string>

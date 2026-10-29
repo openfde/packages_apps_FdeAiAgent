@@ -22,7 +22,7 @@ import kotlinx.coroutines.launch
  * 总协调器 —— 把各层串成一条流水线：
  *
  *  `AiClient（理解意图/规划，支持 DeepSeek/千问/智谱/Kimi/Gemini 等供应商）`
- *      -> 决定执行某个 Skill（ModelPlan.RunSkill）或直接回答
+ *      -> 决定执行一个或多个 Skill 任务（ModelPlan.RunSkills，一次请求可含多条指令）或直接回答
  *  `SkillEngine（多步流程执行）`
  *      -> 每步经 PermissionGuard 检查后由 AppFunctionDispatcher / SkillBuiltins 执行
  *  全程通过 [ExecutionBus] 发布 [AgentEvent]，驱动 SVG 状态面板 / 日志 / 错误提示。
@@ -99,32 +99,71 @@ class AgentCoordinator(context: Context) {
                         emit(AgentEvent.FlowFinished(plan.text))
                     }
 
-                    is ModelPlan.RunSkill -> {
-                        emit(
-                            AgentEvent.NodeFinished(
-                                planNode.asDone(appContext.getString(R.string.plan_done_choose_skill, plan.skillId)),
-                            ),
-                        )
-                        emit(AgentEvent.Logged(appContext.getString(R.string.log_execute_skill, plan.skillId)))
-
-                        val skill = registry.get(plan.skillId)
-                        if (skill == null) {
-                            emit(
-                                AgentEvent.NodeFailed(
-                                    planNode.asFailed(appContext.getString(R.string.node_failed_unknown_skill, plan.skillId)),
-                                    appContext.getString(R.string.unknown_skill),
-                                ),
-                            )
-                            emit(
-                                AgentEvent.FlowFailed(
-                                    appContext.getString(R.string.flow_failed_unknown_skill, plan.skillId),
-                                ),
-                            )
+                    is ModelPlan.RunSkills -> {
+                        val tasks = plan.tasks
+                        val label = if (tasks.size == 1) {
+                            appContext.getString(R.string.plan_done_choose_skill, tasks[0].skillId)
                         } else {
-                            val result = engine.execute(skill, plan.inputs, bus)
-                            emit(AgentEvent.Logged(appContext.getString(R.string.log_skill_result, result.summary)))
-                            if (result.failed) emit(AgentEvent.FlowFailed(result.summary))
-                            else emit(AgentEvent.FlowFinished(result.summary))
+                            appContext.getString(
+                                R.string.plan_done_choose_skills,
+                                tasks.size,
+                                tasks.joinToString { it.skillId },
+                            )
+                        }
+                        emit(AgentEvent.NodeFinished(planNode.asDone(label)))
+
+                        if (tasks.isEmpty()) {
+                            val msg = appContext.getString(R.string.ai_unknown_tool)
+                            emit(AgentEvent.Logged(msg))
+                            emit(AgentEvent.FlowFailed(msg))
+                        } else {
+                            // 依次执行每个 Skill 任务；单个任务失败不中断其余任务，最终根据是否有失败决定整体结果。
+                            val summaries = ArrayList<String>()
+                            var anyFailed = false
+                            tasks.forEachIndexed { index, task ->
+                                emit(
+                                    AgentEvent.Logged(
+                                        appContext.getString(
+                                            R.string.log_execute_skill_multi,
+                                            index + 1,
+                                            tasks.size,
+                                            task.skillId,
+                                        ),
+                                    ),
+                                )
+
+                                val skill = registry.get(task.skillId)
+                                if (skill == null) {
+                                    anyFailed = true
+                                    val msg = appContext.getString(
+                                        R.string.node_failed_unknown_skill,
+                                        task.skillId,
+                                    )
+                                    emit(AgentEvent.Logged(msg))
+                                    summaries.add(msg)
+                                    return@forEachIndexed
+                                }
+
+                                val result = engine.execute(skill, task.inputs, bus)
+                                emit(
+                                    AgentEvent.Logged(
+                                        appContext.getString(R.string.log_skill_result, result.summary),
+                                    ),
+                                )
+                                summaries.add(result.summary)
+                                if (result.failed) anyFailed = true
+                            }
+
+                            val combined = summaries.filter { it.isNotBlank() }
+                                .ifEmpty { listOf(appContext.getString(R.string.plan_done_direct_answer)) }
+                                .joinToString("\n")
+                            emit(
+                                AgentEvent.Logged(
+                                    appContext.getString(R.string.log_multi_result, tasks.size, combined),
+                                ),
+                            )
+                            if (anyFailed) emit(AgentEvent.FlowFailed(combined))
+                            else emit(AgentEvent.FlowFinished(combined))
                         }
                     }
                 }
