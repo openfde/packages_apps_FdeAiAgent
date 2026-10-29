@@ -246,7 +246,7 @@ class SvgStateRenderer(private val context: Context) {
     private fun drawNodes(sb: StringBuilder) {
         val p = palette
         if (nodes.isEmpty()) {
-            sb.append("  <text x=\"34\" y=\"").append(flowTop + 30)
+            sb.append("  <text x=\"34\" y=\"").append(flowTop + 10)
                 .append("\" font-size=\"13\" fill=\"${p.textSecondary}\">")
                 .append(context.getString(R.string.svg_empty)).append("</text>")
             return

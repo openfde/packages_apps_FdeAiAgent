@@ -24,6 +24,15 @@ import kotlin.concurrent.thread
  *   [OnlineRecognizer] 进行流式解码（从 [Listener.onPartial] 得到中间结果）；
  * - 按下一个麦克风（推-按式）：[start] 开始采集，[stop] 结束并返回整句最终结果。
  *
+ * **重要**：这里统一使用 **float32（非 int8 量化）** 模型。
+ *
+ * int8 量化模型会触发 onnxruntime 的 int8 GEMM 内核，该内核依赖 ARM 的
+ * dotprod(FEAT_DotProd)/i8mm(FEAT_I8MM) SIMD 指令（如 `sdot`/`smmla`）。
+ * 在部分 arm64 设备/云手机（含 ARM 指令翻译环境，CPU 特性上报与实际执行能力
+ * 不一致）上，执行这些指令会直接抛 SIGILL（Fatal signal 4, ILL_ILLOPC）导致整个
+ * 进程闪退，并且 Java/Kotlin 层无法捕获。float32 模型只使用 ARMv8 基线 NEON 指令，
+ * 兼容性最好，可将崩溃问题彻底规避（代价是模型文件略大、速度略慢）。
+ *
  * 语言：纯中文（模型为中文 zipformer，不依赖系统语音识别服务，任何设备可用）。
  */
 class SherpaVoiceRecognizer(context: Context) {
@@ -55,9 +64,11 @@ class SherpaVoiceRecognizer(context: Context) {
         private const val ENCODING = AudioFormat.ENCODING_PCM_16BIT
         private const val MODEL_DIR = "sherpa/zh14m"
         private const val TOKENS = "$MODEL_DIR/tokens.txt"
-        private const val ENCODER = "$MODEL_DIR/encoder-epoch-99-avg-1.int8.onnx"
+        // float32（非 int8）模型：避免触发 onnxruntime int8 GEMM 内核所需的
+        // dotprod/i8mm 指令——这些指令在部分 arm64 设备/云手机上会 SIGILL 闪退。
+        private const val ENCODER = "$MODEL_DIR/encoder-epoch-99-avg-1.onnx"
         private const val DECODER = "$MODEL_DIR/decoder-epoch-99-avg-1.onnx"
-        private const val JOINER = "$MODEL_DIR/joiner-epoch-99-avg-1.int8.onnx"
+        private const val JOINER = "$MODEL_DIR/joiner-epoch-99-avg-1.onnx"
     }
 
     private val appContext = context.applicationContext
