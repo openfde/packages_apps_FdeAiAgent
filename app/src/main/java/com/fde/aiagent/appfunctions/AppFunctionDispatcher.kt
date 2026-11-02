@@ -81,6 +81,10 @@ class AppFunctionDispatcher(
             //  - DocumentsUI FileOpResult：成功 status="ok"，deleteFile 带 path、moveFiles 带
             //    movedCount（Long）、renameFolder 带 path/newPath、emptyTrash 带 deletedCount（Long）；
             //    失败通过 AppFunctionException（onError）返回。
+            //  - FDE 精选应用商店（com.fde.download）DownloadAndInstallResponse：带 submitted
+            //    （Boolean）、status（submitted / already_installed）、appName / packageName /
+            //    version / message；GetAvailableAppsResponse：带 apps（对象数组，每项含
+            //    name / packageName / version / installed / updateAvailable）与 isTruncated。
             // 这里统一解析，把设置侧的业务失败也归为 Failure 反馈给用户/模型。
             val doc = response.resultDocument
             val names = runCatching { doc.propertyNames }.getOrNull() ?: emptySet()
@@ -123,6 +127,23 @@ class AppFunctionDispatcher(
             // 批量删除是否被用户在确认弹窗中取消。
             val cancelled = if (names.contains("cancelled")) {
                 runCatching { doc.getPropertyBoolean("cancelled") }.getOrNull()
+            } else {
+                null
+            }
+            // FDE 精选应用商店：downloadAndInstallApp 是否已提交后台下载 + 静默安装
+            // （submitted）；已是最新版本时 submitted=false、status="already_installed"。
+            val submitted = if (names.contains("submitted")) {
+                runCatching { doc.getPropertyBoolean("submitted") }.getOrNull()
+            } else {
+                null
+            }
+            // DownloadAndInstallResponse 的 appName / packageName / version / message。
+            val resultMessage = runCatching { doc.getPropertyString("message") }.getOrNull()
+            val resultVersion = runCatching { doc.getPropertyString("version") }.getOrNull()
+            // getAvailableApps 的 apps 对象数组（每项是 AvailableApp 的 GenericDocument）。
+            val apps = runCatching { doc.getPropertyDocumentArray("apps") }.getOrNull()
+            val isTruncated = if (names.contains("isTruncated")) {
+                runCatching { doc.getPropertyBoolean("isTruncated") }.getOrNull()
             } else {
                 null
             }
@@ -185,6 +206,31 @@ class AppFunctionDispatcher(
                     if (cancelled == true) {
                         append(context.getString(R.string.fn_cancelled_yes))
                     }
+                    if (submitted != null) {
+                        append(
+                            context.getString(
+                                if (submitted) R.string.fn_submitted_yes else R.string.fn_submitted_no,
+                            ),
+                        )
+                    }
+                    resultVersion?.takeIf { it.isNotEmpty() }?.let {
+                        append(context.getString(R.string.fn_result_version, it))
+                    }
+                    if (apps != null && apps.isNotEmpty()) {
+                        append(
+                            context.getString(
+                                R.string.fn_curated_apps,
+                                apps.size,
+                                formatCuratedApps(apps),
+                            ),
+                        )
+                        if (isTruncated == true) {
+                            append(context.getString(R.string.fn_curated_apps_truncated))
+                        }
+                    }
+                    resultMessage?.takeIf { it.isNotEmpty() }?.let {
+                        append(context.getString(R.string.fn_result_message, it))
+                    }
                     outputPath?.takeIf { it.isNotEmpty() }?.let { append(context.getString(R.string.fn_output_path, it)) }
                 },
                 raw = status ?: "ok",
@@ -194,6 +240,37 @@ class AppFunctionDispatcher(
                 displayText = context.getString(R.string.fn_call_failed, "${t.javaClass.simpleName}: ${t.message}"),
                 cause = t,
             )
+        }
+    }
+
+    /**
+     * 把 getAvailableApps 返回的 AvailableApp 文档数组格式化为可读列表（最多截取 12 项）。
+     * 每项显示为：名称(包名) v版本 状态标记，如 `微信(com.tencent.mm) v8.0.1 可更新`。
+     */
+    private fun formatCuratedApps(apps: Array<GenericDocument>): String {
+        val shown = apps.take(12).joinToString("；") { formatCuratedApp(it) }
+        return if (apps.size > 12) "$shown …" else shown
+    }
+
+    private fun formatCuratedApp(app: GenericDocument): String {
+        val name = runCatching { app.getPropertyString("name") }.getOrNull().orEmpty()
+        val pkg = runCatching { app.getPropertyString("packageName") }.getOrNull().orEmpty()
+        val version = runCatching { app.getPropertyString("version") }.getOrNull().orEmpty()
+        val propNames = runCatching { app.propertyNames }.getOrNull() ?: emptySet()
+        val installed = propNames.contains("installed") &&
+            runCatching { app.getPropertyBoolean("installed") }.getOrDefault(false)
+        val update = propNames.contains("updateAvailable") &&
+            runCatching { app.getPropertyBoolean("updateAvailable") }.getOrDefault(false)
+        val state = when {
+            update -> context.getString(R.string.fn_app_state_update)
+            installed -> context.getString(R.string.fn_app_state_installed)
+            else -> context.getString(R.string.fn_app_state_not_installed)
+        }
+        return buildString {
+            append(if (name.isNotEmpty()) name else pkg.ifEmpty { "?" })
+            if (pkg.isNotEmpty() && pkg != name) append("($pkg)")
+            if (version.isNotEmpty()) append(" v$version")
+            append(state)
         }
     }
 

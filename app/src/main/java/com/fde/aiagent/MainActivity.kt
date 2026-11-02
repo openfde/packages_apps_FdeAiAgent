@@ -129,10 +129,10 @@ class MainActivity : Activity(), ExecutionListener {
         findViewById<Button>(R.id.btnRunAgent).setOnClickListener { runAgent() }
         btnVoiceInput.setOnClickListener { toggleVoiceInput() }
         findViewById<Button>(R.id.btnConfig).setOnClickListener {
-            startActivityForResult(
+            /*startActivityForResult(
                 android.content.Intent(this, ConfigActivity::class.java),
                 REQ_CONFIG,
-            )
+            )*/
         }
 
 

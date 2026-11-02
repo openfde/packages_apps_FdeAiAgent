@@ -31,6 +31,7 @@ app/src/main/
 │   ├── task_create/SKILL.md      # 写入任务文件并回读校验（演示权限守卫 + 引用链）
 │   ├── file_find/SKILL.md        # 查找文件（DocumentsUI 只读 AppFunction）：按名称/时间过滤条件查找（findFiles）、找大文件（findLargeFiles）、找 N 天未用文件（findUnusedFiles）
 │   └── file_delete/SKILL.md      # 批量删除文件（DocumentsUI）：按名称前缀/后缀删除（deleteFilesByName）、按修改时间删除（deleteFilesByTime）、删除显式路径（deleteFiles）
+│   └── curated_apps/SKILL.md     # FDE 精选应用商店（com.fde.download，FDECuratedApps）：列出精选应用及安装/更新状态（getAvailableApps）、后台下载+静默安装（downloadAndInstallApp）
 ├── assets/sherpa/zh14m/          # 纯离线中文语音识别模型（流式 zipformer，int8）：encoder/decoder/joiner/tokens
 └── java/com/fde/aiagent/
     ├── MainActivity.kt              # 纯 UI：选择供应商/填 key、订阅事件、驱动 SVG/日志/错误提示
@@ -267,6 +268,36 @@ DocumentsUI 另提供三个删除 AppFunction，FdeAiAgent 合并为一个 Skill
 
 三者移入系统回收站可恢复；`requireConfirmation` 缺省 true 时删除前弹窗逐项确认，用户取消时
 返回 `cancelled=true`（分发器会反馈给用户）。删除结果带 `deletedCount`（+ 最多 200 条 `paths`）。
+
+### 2.9 FDE 精选应用商店（curated_apps：getAvailableApps / downloadAndInstallApp）
+
+FDE 精选应用商店应用 `com.fde.download`（FDECuratedApps）通过 androidx.appfunctions-service
+（KSP 生成的 AppFunctionService 由库 manifest 自动注册）对外暴露两个 AppFunction，
+FdeAiAgent 合并为 Skill `curated_apps`（`assets/skills/curated_apps/SKILL.md`），
+功能的实现参考 FDECuratedApps 的 `src/com/fde/download/appfunctions/CuratedAppsAppFunctions.kt`：
+
+- `getAvailableApps`：无参数，返回精选应用列表（与下载 UI 使用同一份 `CuratedAppsRepository`
+  列表：网络优先、raw resource 兜底），每项带 `name`（精选显示名）/ `packageName` /
+  `version`（curated 版本）/ `installed`（是否已安装）/ `updateAvailable`（已装旧版本是否可更新）；
+- `downloadAndInstallApp`：参数 `packageName` / `appName` 至少提供一个（同时提供以
+  `packageName` 优先），按商店内 `findApp` 解析（包名匹配优先，再按 curated 显示名匹配，
+  支持 `微信` / `FDE_txt` 等写法）；已安装最新版本时返回 `status="already_installed"`（no-op），
+  否则复用 `DownloadService` 管线后台下载（MD5 校验）+ 静默安装并立即返回
+  `status="submitted"`；找不到匹配应用或参数缺失时抛 `AppFunctionInvalidArgumentException`。
+
+FdeAiAgent 侧消费方接入：
+
+- `AppFunctionCatalog` 增加 `GET_AVAILABLE_APPS` / `DOWNLOAD_AND_INSTALL_APP` 目录项。
+  注意：androidx KSP 编译出的函数标识符是「类全名#函数名」完整 ID（如
+  `com.fde.download.appfunctions.CuratedAppsAppFunctions#downloadAndInstallApp`），
+  与 Settings / DocumentsUI 那些手写服务的短 ID 不同，目录项的 `id` 必须用完整 ID，
+  平台 `AppFunctionManager` 按 `packageName + functionIdentifier` 解析；服务名填
+  androidx.appfunctions-service 注册的 `androidx.appfunctions.service.PlatformAppFunctionService`；
+- 合并为单个 Skill `curated_apps`，`install` 入参同时以 `packageName` + `appName` 下发，
+  以同时覆盖「按包名」与「按精选显示名」两种识别方式；
+- 结果文档统一解析：`downloadAndInstallApp` 带 `submitted` / `status` / `message` /
+  `version`；`getAvailableApps` 带 `apps`（`getPropertyDocumentArray` 展开的对象数组）与
+  `isTruncated`，分发器把每项拼成 `名称(包名) v版本 状态` 返回。
 
 ## 3. 一次「打开图片」的执行时序
 

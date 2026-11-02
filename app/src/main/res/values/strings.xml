@@ -41,7 +41,7 @@
     <string name="btn_voice_input">🎤 Voice input</string>
     <string name="chk_auto_run">Run automatically after recognition</string>
     <string name="voice_status_default">Click 🎤 to start voice input</string>
-    <string name="available_skills">Available Skills: gallery / file_search / file_op / settings / app_open / task_create / file_find / file_delete</string>
+    <string name="available_skills">Available Skills: gallery / file_search / file_op / settings / app_open / task_create / file_find / file_delete / curated_apps</string>
     <string name="btn_run_agent">Run Agent</string>
     <string name="btn_open_gallery">Open Gallery</string>
     <string name="btn_feature_desc">Features</string>
@@ -174,6 +174,10 @@ file manager apps.
   e.g. delete /mnt/sdcard/Download/a.png
 □ Task record (task_create): write text to a file and read it back for verification
   e.g. record "write weekly report" to /data/local/tmp/task.txt
+□ FDE curated apps store (curated_apps, com.fde.download): list curated apps and their
+  install/update state, background download + silent install a curated app
+  e.g. what curated apps can I install
+  e.g. install WeChat (com.tencent.mm) from the curated store
 
 [UI shortcuts]
 · "Open Gallery" button: directly open an image (fill in the image path first);
@@ -215,6 +219,15 @@ file manager apps.
     <string name="fn_paths">, files: %1$s</string>
     <string name="fn_cancelled_yes">, user cancelled the delete confirmation</string>
     <string name="fn_call_failed">AppFunctions call failed: %1$s</string>
+    <string name="fn_submitted_yes">, submitted to background download + silent install</string>
+    <string name="fn_submitted_no">, not submitted (already installed and up to date)</string>
+    <string name="fn_result_version">, version=%1$s</string>
+    <string name="fn_result_message">, detail: %1$s</string>
+    <string name="fn_curated_apps">, curated apps (%1$d): %2$s</string>
+    <string name="fn_curated_apps_truncated"> (list truncated)</string>
+    <string name="fn_app_state_installed"> installed</string>
+    <string name="fn_app_state_update"> update available</string>
+    <string name="fn_app_state_not_installed"> not installed</string>
 
     <!-- ================= Skill engine ================= -->
     <string name="log_skip_step">→ skip %1$s (condition not met: %2$s)</string>
@@ -262,6 +275,8 @@ file manager apps.
     <string name="appfunc_desc_find_large_files">Recursively find large files in a folder (minSize bytes, sorted by size descending)</string>
     <string name="appfunc_desc_find_unused_files">Recursively find files not accessed / modified for N days (least recently used first)</string>
     <string name="appfunc_desc_delete_files">Delete explicitly listed file paths (move to trash, recoverable)</string>
+    <string name="appfunc_desc_get_available_apps">List the apps in the FDE curated apps store with their install / update state (no parameters)</string>
+    <string name="appfunc_desc_download_and_install_app">Background download + silent install a curated app from the FDE curated apps store (packageName or appName)</string>
 
     <!-- ================= AI client ================= -->
     <string name="ai_no_api_key">API Key is not configured. Please select a provider and fill in the key on the UI first.</string>

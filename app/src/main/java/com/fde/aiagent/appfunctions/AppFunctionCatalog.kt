@@ -15,7 +15,11 @@ import com.fde.aiagent.R
  *    回收站）、moveFiles（移动文件夹下的文件）、renameFolder（重命名）、emptyTrash（清空回收站）、
  *    findFiles（按过滤条件查找）、deleteFilesByName（按名称前缀/后缀删除）、
  *    deleteFilesByTime（按最后修改时间删除）、findLargeFiles（找大文件）、
- *    findUnusedFiles（找不常用文件）、deleteFiles（删除显式路径列表）。
+ *    findUnusedFiles（找不常用文件）、deleteFiles（删除显式路径列表）；
+ *  - FDE 精选应用商店 `com.fde.download`（FDECuratedApps，androidx.appfunctions-service
+ *    自动注册 PlatformAppFunctionService）对外暴露的能力：getAvailableApps（列出精选应用及
+ *    安装/更新状态）、downloadAndInstallApp（后台下载并静默安装精选应用，按 packageName 或
+ *    curated appName 识别）。
  *
  * 新增能力时只需在这里加一条 [AppFunction]，Skill / AI 客户端 / 分发器无需改动。
  */
@@ -31,6 +35,16 @@ object AppFunctionCatalog {
     const val DOCUMENTS_PACKAGE = "com.android.documentsui"
     const val DOCUMENTS_SERVICE =
         "com.android.documentsui.appfunctions.DocumentsUiAppFunctionService"
+
+    // FDE 精选应用商店（FDECuratedApps）通过 androidx.appfunctions-service 的
+    // PlatformAppFunctionService（AAR manifest 自动注册）对外暴露 AppFunction；
+    // 函数标识符为 KSP 生成的「类全名#函数名」完整 ID。
+    const val CURATED_APPS_PACKAGE = "com.fde.download"
+    const val CURATED_APPS_SERVICE = "androidx.appfunctions.service.PlatformAppFunctionService"
+    const val FUNC_GET_AVAILABLE_APPS =
+        "com.fde.download.appfunctions.CuratedAppsAppFunctions#getAvailableApps"
+    const val FUNC_DOWNLOAD_AND_INSTALL_APP =
+        "com.fde.download.appfunctions.CuratedAppsAppFunctions#downloadAndInstallApp"
 
     const val FUNC_OPEN_IMAGE = "openImage"
     const val FUNC_PLAY_VIDEO = "playVideo"
@@ -507,6 +521,56 @@ object AppFunctionCatalog {
         requiredParams = listOf("paths"),
     )
 
+    /**
+     * 列出 FDE 精选应用商店（com.fde.download，FDECuratedApps）当前精选的应用。无参数。
+     * 返回结果带 `apps` 数组（每项含 name / packageName / version / installed /
+     * updateAvailable），供调用方了解哪些应用可安装/可更新。功能定义见 FDECuratedApps 的
+     * `src/com/fde/download/appfunctions/CuratedAppsAppFunctions.kt#getAvailableApps`
+     * （androidx.appfunctions-service 注册的 PlatformAppFunctionService）。
+     */
+    val GET_AVAILABLE_APPS = AppFunction(
+        id = FUNC_GET_AVAILABLE_APPS,
+        packageName = CURATED_APPS_PACKAGE,
+        serviceName = CURATED_APPS_SERVICE,
+        description = "列出 FDE 精选应用商店的应用及各自的安装/更新状态（无参数）",
+        descRes = R.string.appfunc_desc_get_available_apps,
+        schemaJson = """
+            {
+              "type": "object",
+              "properties": {},
+              "required": []
+            }
+        """.trimIndent(),
+        requiredParams = listOf(),
+    )
+
+    /**
+     * 后台下载并静默安装 FDE 精选应用商店（com.fde.download，FDECuratedApps）中的某个精选应用。
+     * 按 [packageName]（优先，如 com.tencent.mm）或其 curated [appName]（如 微信）其中一个识别；
+     * 已安装在最新精选版本时是 no-op（status="already_installed"），否则立即提交后台下载 +
+     * 静默安装（status="submitted"）并返回，安装完成后异步继续。提交失败会抛
+     * AppFunctionInvalidArgumentException（分发层按失败处理）。功能定义见 FDECuratedApps 的
+     * `src/com/fde/download/appfunctions/CuratedAppsAppFunctions.kt#downloadAndInstallApp`。
+     */
+    val DOWNLOAD_AND_INSTALL_APP = AppFunction(
+        id = FUNC_DOWNLOAD_AND_INSTALL_APP,
+        packageName = CURATED_APPS_PACKAGE,
+        serviceName = CURATED_APPS_SERVICE,
+        description = "后台下载并静默安装 FDE 精选应用商店中的应用（packageName 或 appName 至少一个，同时提供时以 packageName 优先）",
+        descRes = R.string.appfunc_desc_download_and_install_app,
+        schemaJson = """
+            {
+              "type": "object",
+              "properties": {
+                "packageName": { "type": "string", "description": "要安装的精选应用包名，例如 com.tencent.mm" },
+                "appName": { "type": "string", "description": "要安装的精选应用显示名（curated appName），例如 微信" }
+              },
+              "required": []
+            }
+        """.trimIndent(),
+        requiredParams = listOf(),
+    )
+
     val ALL: List<AppFunction> = listOf(
         OPEN_IMAGE, PLAY_VIDEO, EDIT_IMAGE,
         OPEN_SETTINGS_PAGE, ADJUST_BRIGHTNESS,
@@ -514,6 +578,7 @@ object AppFunctionCatalog {
         DELETE_FILE, MOVE_FILES, RENAME_FOLDER, EMPTY_TRASH,
         FIND_FILES, DELETE_FILES_BY_NAME, DELETE_FILES_BY_TIME,
         FIND_LARGE_FILES, FIND_UNUSED_FILES, DELETE_FILES,
+        GET_AVAILABLE_APPS, DOWNLOAD_AND_INSTALL_APP,
     )
 
     private val byId: Map<String, AppFunction> = ALL.associateBy { it.id }
