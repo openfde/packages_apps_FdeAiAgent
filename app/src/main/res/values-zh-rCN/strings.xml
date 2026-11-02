@@ -122,68 +122,7 @@
     <string name="check_node_done">AppFunctions 可用（权限守卫通过）</string>
     <string name="log_direct_ok">✔ %1$s</string>
 
-    <string name="feature_summary" formatted="false">===== 功能说明 =====
-
-本智能体 = AI 理解/规划 ＋ Skill 编排 ＋ 跨应用 AppFunction 执行。
-所选 AI 供应商负责理解指令并规划动作，Skill 编排多步骤流程，
-AppFunction 调用相册/设置/文件管理器等应用暴露的真实能力。
-
-【使用步骤】
-1. 点击右上角「⚙ 配置」选择 AI 供应商并填写 API Key（在各平台申请），模型可留空用默认；
-2. 在「智能体指令」框输入自然语言指令，点击「运行智能体」；
-3. 也可点击 🎤 语音输入，识别后勾选「识别后自动运行」便直接执行；
-4. 中栏 SVG 面板实时展示执行流程，右栏运行日志输出每一步的结果。
-
-【可用功能与示例指令】
-□ 相册媒体（gallery）：打开图片、播放视频、给图片加滤镜另存
-  例：打开 /sdcard/Download/bella.jpg
-  例：播放 /sdcard/Movies/clip.mp4
-  例：把 /sdcard/Download/a.jpg 加黑白滤镜另存
-
-□ 系统设置（settings）：打开设置页、调节亮度/音量/静音、深色模式
-  例：打开 Wi-Fi 设置 / 打开显示设置 / 打开应用设置
-  例：把屏幕调亮一点（dim 调暗）
-  例：把声音调大 50%（volume_down 调小）
-  例：静音 / 取消静音 / 打开深色模式 / 关闭深色模式
-  例：关闭深色模式并把亮度调到最高（支持一次执行多条指令）
-
-□ 打开应用（app_open）：按包名或应用名打开任意应用
-  例：打开设置 / 打开相册 / 打开 com.android.settings
-
-□ 文件管理（file_op）：删除（移入回收站）、移动、重命名、清空回收站
-  例：删除 桌面/a.txt
-  例：把 桌面/临时 里的文件移到 桌面/归档
-  例：把 报告.txt 改名为 报告2026.txt
-  例：清空回收站
-
-□ 文件搜索（file_search）：按后缀/关键字在目录中搜索文件
-  例：在 /mnt/sdcard/Pictures 里找 *.png
-
-□ 文件查找（file_find）：在文件夹下按名称/修改时间过滤条件查找文件、找大文件、找 N 天未用的
-  不常用文件（DocumentsUI 只读 AppFunction）
-  例：在 桌面 下找 *.pdf
-  例：找 桌面/Pictures 最近 3 个月没改过的所有文件
-  例：找 /mnt/sdcard 下超过 500MB 的文件
-  例：找 /mnt/sdcard/Downloads 里 30 天没用的文件
-
-□ 批量删除文件（file_delete）：按名称前缀/后缀或按最后修改时间删除匹配文件，或删除显式列出的
-  路径（移入回收站，可恢复）
-  例：删除 桌面/临时 下所有 .tmp 文件（递归）
-  例：删除 桌面/old 里 2026-01-01 之前修改的文件
-  例：删除 /mnt/sdcard/Download/a.png
-
-□ 任务记录（task_create）：把文本写入文件并回读校验
-  例：把“写周报”记录到 /data/local/tmp/task.txt
-
-□ FDE 精选应用商店（curated_apps，com.fde.download）：列出精选应用及其安装/更新状态、
-   后台下载并静默安装某个精选应用
-   例：有什么精选应用可以安装
-   例：从精选商店安装 微信（com.tencent.mm）
-
-【界面快捷入口】
-· 「打开相册」按钮：直接打开图片（先填好图片路径）；
-· 「打开设置页」下拉 + 按钮：直接打开选定的设置页；
-· 「清空日志」：清空右栏运行日志并重置 SVG 状态面板。</string>
+    <string name="feature_summary" formatted="false">===== 功能说明 =====\n\n本智能体 = AI 理解/规划 ＋ Skill 编排 ＋ 跨应用 AppFunction 执行。\n所选 AI 供应商负责理解指令并规划动作，Skill 编排多步骤流程，\nAppFunction 调用相册/设置/文件管理器等应用暴露的真实能力。\n\n【使用步骤】\n1. 点击右上角「⚙ 配置」选择 AI 供应商并填写 API Key（在各平台申请），模型可留空用默认；\n2. 在「智能体指令」框输入自然语言指令，点击「运行智能体」；\n3. 也可点击 🎤 语音输入，识别后勾选「识别后自动运行」便直接执行；\n4. 中栏 SVG 面板实时展示执行流程，右栏运行日志输出每一步的结果。\n\n【可用功能与示例指令】\n□ 相册媒体（gallery）：打开图片、播放视频、给图片加滤镜另存\n  例：打开 /sdcard/Download/bella.jpg\n  例：播放 /sdcard/Movies/clip.mp4\n  例：把 /sdcard/Download/a.jpg 加黑白滤镜另存\n\n□ 系统设置（settings）：打开设置页、调节亮度/音量/静音、深色模式\n  例：打开 Wi-Fi 设置 / 打开显示设置 / 打开应用设置\n  例：把屏幕调亮一点（dim 调暗）\n  例：把声音调大 50%（volume_down 调小）\n  例：静音 / 取消静音 / 打开深色模式 / 关闭深色模式\n  例：关闭深色模式并把亮度调到最高（支持一次执行多条指令）\n\n□ 打开应用（app_open）：按包名或应用名打开任意应用\n  例：打开设置 / 打开相册 / 打开 com.android.settings\n\n□ 文件管理（file_op）：删除（移入回收站）、移动、重命名、清空回收站\n  例：删除 桌面/a.txt\n  例：把 桌面/临时 里的文件移到 桌面/归档\n  例：把 报告.txt 改名为 报告2026.txt\n  例：清空回收站\n\n□ 文件搜索（file_search）：按后缀/关键字在目录中搜索文件\n  例：在 /mnt/sdcard/Pictures 里找 *.png\n\n□ 文件查找（file_find）：在文件夹下按名称/修改时间过滤条件查找文件、找大文件、找 N 天未用的\n  不常用文件（DocumentsUI 只读 AppFunction）\n  例：在 桌面 下找 *.pdf\n  例：找 桌面/Pictures 最近 3 个月没改过的所有文件\n  例：找 /mnt/sdcard 下超过 500MB 的文件\n  例：找 /mnt/sdcard/Downloads 里 30 天没用的文件\n\n□ 批量删除文件（file_delete）：按名称前缀/后缀或按最后修改时间删除匹配文件，或删除显式列出的\n  路径（移入回收站，可恢复）\n  例：删除 桌面/临时 下所有 .tmp 文件（递归）\n  例：删除 桌面/old 里 2026-01-01 之前修改的文件\n  例：删除 /mnt/sdcard/Download/a.png\n\n□ 任务记录（task_create）：把文本写入文件并回读校验\n  例：把“写周报”记录到 /data/local/tmp/task.txt\n\n□ FDE 精选应用商店（curated_apps，com.fde.download）：列出精选应用及其安装/更新状态、\n   后台下载并静默安装某个精选应用\n   例：有什么精选应用可以安装\n   例：从精选商店安装 微信（com.tencent.mm）\n\n【界面快捷入口】\n· 「打开相册」按钮：直接打开图片（先填好图片路径）；\n· 「打开设置页」下拉 + 按钮：直接打开选定的设置页；\n· 「清空日志」：清空右栏运行日志并重置 SVG 状态面板。</string>
 
     <!-- ================= 权限守卫 ================= -->
     <string name="guard_api_too_low">当前设备是 API %1$d，AppFunctions 需要 API %2$d。</string>
