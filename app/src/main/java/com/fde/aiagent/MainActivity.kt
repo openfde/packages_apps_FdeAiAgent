@@ -70,14 +70,11 @@ class MainActivity : Activity(), ExecutionListener {
         private const val KEY_API = "api_key"
         private const val KEY_MODEL = "model"
         private const val KEY_BASE_URL = "base_url"
-        private const val KEY_IMAGE_PATH = "image_path"
-        private const val KEY_VIDEO_PATH = "video_path"
         private const val KEY_PROMPT = "prompt"
         private const val KEY_VOICE_AUTORUN = "voice_autorun"
         private const val REQ_RECORD_AUDIO = 1001
         private const val REQ_CONFIG = 1002
 
-        private const val DEFAULT_IMAGE_PATH = "/mnt/sdcard/Pictures/aa.png"
 
         /** 「打开设置页」下拉可选页面：key -> 显示名资源（与 Settings 的 openSettingsPage 保持一致）。 */
         private val SETTINGS_PAGES = listOf(
@@ -137,7 +134,8 @@ class MainActivity : Activity(), ExecutionListener {
 
 
         findViewById<Button>(R.id.btnGrantFunctionPermission).setOnClickListener {
-            appendLog(coordinator.featureSummary())
+            // 功能说明改为在独立的 FeatureDescActivity 页面展示
+            startActivity(android.content.Intent(this, FeatureDescActivity::class.java))
         }
         findViewById<Button>(R.id.btnClearLog).setOnClickListener {
             tvLog.setText(getString(R.string.log_waiting))

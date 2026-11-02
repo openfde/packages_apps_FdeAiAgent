@@ -30,12 +30,8 @@
     <string name="hint_model">deepseek-chat / qwen-plus / glm-4-plus / gemini-2.5-flash ...</string>
     <string name="label_base_url">Base URL (required when "Custom" is selected)</string>
     <string name="hint_base_url">https://example.com/v1/chat/completions</string>
-    <string name="label_image_path">Image path (openImage)</string>
-    <string name="hint_image_path">/mnt/sdcard/Pictures/aa.png</string>
-    <string name="label_video_path">Video path (playVideo, optional)</string>
-    <string name="hint_video_path">/mnt/sdcard/Movies/clip.mp4</string>
     <string name="label_agent_prompt">Agent Prompt</string>
-    <string name="hint_agent_prompt">e.g. Help me open this image</string>
+    <string name="hint_agent_prompt">e.g. Help me open settings app</string>
     <string name="default_prompt">Open the image at /mnt/sdcard/Pictures/aa.png for preview</string>
     <string name="label_voice_input">Voice input (just speak to the microphone)</string>
     <string name="btn_voice_input">🎤 Voice input</string>
@@ -45,6 +41,7 @@
     <string name="btn_run_agent">Run Agent</string>
     <string name="btn_open_gallery">Open Gallery</string>
     <string name="btn_feature_desc">Features</string>
+    <string name="feature_desc_title">Features</string>
     <string name="btn_clear_log">Clear Log</string>
     <string name="btn_open_settings">Open Settings Page</string>
     <string name="settings_page_item_format">%1$s (%2$s)</string>
@@ -146,34 +143,42 @@ file manager apps.
   e.g. open /sdcard/Download/bella.jpg
   e.g. play /sdcard/Movies/clip.mp4
   e.g. add a black_white filter to /sdcard/Download/a.jpg and save
+
 □ System settings (settings): open settings pages, adjust brightness/volume/mute, dark mode
   e.g. open Wi-Fi settings / open display settings / open app settings
   e.g. make the screen a bit brighter (dim makes it darker)
   e.g. turn the volume up by 50% (volume_down makes it smaller)
   e.g. mute / unmute / enable dark mode / disable dark mode
   e.g. disable dark mode and set brightness to maximum (multiple instructions in one run)
+
 □ Open an app (app_open): open any app by package name or app name
   e.g. open Settings / open Gallery / open com.android.settings
+
 □ File management (file_op): delete (move to trash), move, rename, empty trash
   e.g. delete Desktop/a.txt
   e.g. move the files in Desktop/temp to Desktop/archive
   e.g. rename report.txt to report2026.txt
   e.g. empty trash
+
 □ File search (file_search): search files in a directory by extension/keyword
   e.g. find *.png in /mnt/sdcard/Pictures
+
 □ File lookup (file_find): find files in a folder by name / modified-time filters,
   find large files, find files unused for N days (read-only DocumentsUI AppFunctions)
   e.g. find *.pdf under Desktop
   e.g. find all files in Desktop/Pictures not modified in the last 3 months
   e.g. find files larger than 500MB under /mnt/sdcard
   e.g. find files not used for 30 days under /mnt/sdcard/Downloads
+
 □ Bulk file delete (file_delete): delete matching files by name prefix / suffix or by
   last-modified time, or delete an explicitly listed path (moved to trash, recoverable)
   e.g. delete all .tmp files under Desktop/Temp (recursive)
   e.g. delete files in Desktop/old modified before 2026-01-01 midnight
   e.g. delete /mnt/sdcard/Download/a.png
+
 □ Task record (task_create): write text to a file and read it back for verification
   e.g. record "write weekly report" to /data/local/tmp/task.txt
+
 □ FDE curated apps store (curated_apps, com.fde.download): list curated apps and their
   install/update state, background download + silent install a curated app
   e.g. what curated apps can I install

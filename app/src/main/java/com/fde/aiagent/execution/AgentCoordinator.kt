@@ -315,9 +315,4 @@ class AgentCoordinator(context: Context) {
             }
         }
     }
-
-    /**
-     * 「功能说明」按钮：返回本智能体已有的功能总览与使用方法，展示在运行日志面板。
-     */
-    fun featureSummary(): String = appContext.getString(R.string.feature_summary)
 }
