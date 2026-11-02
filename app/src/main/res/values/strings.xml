@@ -4,7 +4,7 @@
     <!-- ================= Top bar ================= -->
     <string name="tv_subtitle">AI × Skill × AppFunctions</string>
     <string name="status_ready">Ready</string>
-    <string name="home_config_entry">⚙ Config</string>
+    <string name="home_config_entry">Config</string>
 
     <!-- ================= ConfigActivity (API Key configuration) ================= -->
     <string name="config_title">API Key Configuration</string>
