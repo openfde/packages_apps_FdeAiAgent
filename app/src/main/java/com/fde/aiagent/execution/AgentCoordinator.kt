@@ -64,14 +64,14 @@ class AgentCoordinator(context: Context) {
             var client: AiClient? = null
             try {
                 emit(AgentEvent.FlowStarted)
-                emit(AgentEvent.Logged(appContext.getString(R.string.log_run_agent)))
+//                emit(AgentEvent.Logged(appContext.getString(R.string.log_run_agent)))
 
                 val skills = registry.all()
-                emit(
-                    AgentEvent.Logged(
-                        appContext.getString(R.string.log_registered_skills, skills.joinToString { it.id }),
-                    ),
-                )
+//                emit(
+//                    AgentEvent.Logged(
+//                        appContext.getString(R.string.log_registered_skills, skills.joinToString { it.id }),
+//                    ),
+//                )
 
                 // 1) 所选 AI 供应商：理解意图 & 规划
                 val planNode = FlowNode(
@@ -81,7 +81,9 @@ class AgentCoordinator(context: Context) {
                 )
                 emit(AgentEvent.NodeStarted(planNode.asRunning()))
 
-                val cli = AiClient(cfg, appContext) { line -> emit(AgentEvent.Logged(line)) }
+                val cli = AiClient(cfg, appContext) { line -> {
+//                    emit(AgentEvent.Logged(line))
+                }}
                 client = cli
                 val plan = cli.plan(
                     p,
@@ -90,11 +92,12 @@ class AgentCoordinator(context: Context) {
 
                 when (plan) {
                     is ModelPlan.Answer -> {
-                        emit(
-                            AgentEvent.NodeFinished(
-                                planNode.asDone(appContext.getString(R.string.plan_done_direct_answer)),
-                            ),
-                        )
+                        //model 直接回答
+//                        emit(
+//                            AgentEvent.NodeFinished(
+//                                planNode.asDone(appContext.getString(R.string.plan_done_direct_answer)),
+//                            ),
+//                        )
                         emit(AgentEvent.Logged("← ${plan.text}"))
                         emit(AgentEvent.FlowFinished(plan.text))
                     }
