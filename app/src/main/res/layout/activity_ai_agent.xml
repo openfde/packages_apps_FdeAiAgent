@@ -317,9 +317,6 @@
             </LinearLayout>
         </LinearLayout>
 
-        <Space
-            android:layout_width="12dp"
-            android:layout_height="match_parent" />
 
         <!-- ============ 中栏：SVG 状态面板 ============ -->
         <LinearLayout
@@ -387,10 +384,7 @@
                 tools:text="@string/error_banner_sample"
                 tools:visibility="visible" />
         </LinearLayout>
-
-        <Space
-            android:layout_width="12dp"
-            android:layout_height="match_parent" />
+        
 
         <!-- ============ 右栏：运行日志控制台 ============ -->
         <LinearLayout
