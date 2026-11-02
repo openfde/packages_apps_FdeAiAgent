@@ -9,7 +9,6 @@ import android.os.Bundle
 import android.view.View
 import android.webkit.WebSettings
 import android.webkit.WebView
-import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.CheckBox
@@ -48,17 +47,9 @@ class MainActivity : Activity(), ExecutionListener {
 
     private lateinit var renderer: SvgStateRenderer
 
-    private lateinit var spProvider: Spinner
-    private lateinit var spSettingsPage: Spinner
     private lateinit var chkAutoRun: CheckBox
     private lateinit var btnVoiceInput: Button
     private lateinit var tvVoiceStatus: TextView
-    private lateinit var editApiKey: EditText
-    private lateinit var editModel: EditText
-    private lateinit var editBaseUrl: EditText
-    private lateinit var lblBaseUrl: TextView
-    private lateinit var editImagePath: EditText
-    private lateinit var editVideoPath: EditText
     private lateinit var editPrompt: EditText
     private lateinit var tvLog: TextView
     private lateinit var svLog: ScrollView
@@ -84,6 +75,7 @@ class MainActivity : Activity(), ExecutionListener {
         private const val KEY_PROMPT = "prompt"
         private const val KEY_VOICE_AUTORUN = "voice_autorun"
         private const val REQ_RECORD_AUDIO = 1001
+        private const val REQ_CONFIG = 1002
 
         private const val DEFAULT_IMAGE_PATH = "/mnt/sdcard/Pictures/aa.png"
 
@@ -104,17 +96,9 @@ class MainActivity : Activity(), ExecutionListener {
         actionBar?.hide()
         renderer = SvgStateRenderer(this)
         prefs = getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-        spProvider = findViewById(R.id.spProvider)
-        spSettingsPage = findViewById(R.id.spSettingsPage)
         chkAutoRun = findViewById(R.id.chkAutoRun)
         btnVoiceInput = findViewById(R.id.btnVoiceInput)
         tvVoiceStatus = findViewById(R.id.tvVoiceStatus)
-        editApiKey = findViewById(R.id.editApiKey)
-        editModel = findViewById(R.id.editModel)
-        editBaseUrl = findViewById(R.id.editBaseUrl)
-        lblBaseUrl = findViewById(R.id.lblBaseUrl)
-        editImagePath = findViewById(R.id.editImagePath)
-        editVideoPath = findViewById(R.id.editVideoPath)
         editPrompt = findViewById(R.id.editAgentPrompt)
         tvLog = findViewById(R.id.tvAgentLog)
         svLog = findViewById(R.id.svLog)
@@ -123,47 +107,13 @@ class MainActivity : Activity(), ExecutionListener {
         tvModelInfo = findViewById(R.id.tvModelInfo)
         svgView = findViewById(R.id.svgStateView)
 
-        // AI 供应商选择：几套预设 + 自定义
-        val providers = AiProvider.entries
-        spProvider.adapter = ArrayAdapter(
-            this,
-            android.R.layout.simple_spinner_item,
-            providers.map { getString(it.labelRes) },
-        ).apply { setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item) }
-
         // 设置页选择：wifi/display/sound/apps/storage
-        spSettingsPage.adapter = ArrayAdapter(
-            this,
-            android.R.layout.simple_spinner_item,
-            SETTINGS_PAGES.map { (key, nameRes) ->
-                getString(R.string.settings_page_item_format, getString(nameRes), key)
-            },
-        ).apply { setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item) }
 
         // 恢复上次保存的配置
-        val savedProvider = prefs.getString(KEY_PROVIDER, AiProvider.DEEPSEEK.id)!!
-        val providerIndex = AiProvider.indexOf(savedProvider).coerceAtLeast(0)
-        spProvider.setSelection(providerIndex)
-        editApiKey.setText(prefs.getString(KEY_API, ""))
-        editModel.setText(prefs.getString(KEY_MODEL, ""))
-        editBaseUrl.setText(prefs.getString(KEY_BASE_URL, ""))
-        editImagePath.setText(prefs.getString(KEY_IMAGE_PATH, DEFAULT_IMAGE_PATH))
-        editVideoPath.setText(prefs.getString(KEY_VIDEO_PATH, ""))
         editPrompt.setText(prefs.getString(KEY_PROMPT, getString(R.string.default_prompt)))
 
         // 恢复语音输入配置
         chkAutoRun.isChecked = prefs.getBoolean(KEY_VOICE_AUTORUN, true)
-
-        spProvider.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
-                saveSettings()
-                onProviderChanged()
-            }
-
-            override fun onNothingSelected(parent: AdapterView<*>?) {
-                onProviderChanged()
-            }
-        }
 
         // 自动运行开关变化即保存
         chkAutoRun.setOnCheckedChangeListener { _, _ -> saveSettings() }
@@ -178,23 +128,14 @@ class MainActivity : Activity(), ExecutionListener {
 
         findViewById<Button>(R.id.btnRunAgent).setOnClickListener { runAgent() }
         btnVoiceInput.setOnClickListener { toggleVoiceInput() }
-        findViewById<Button>(R.id.btnOpenGallery).setOnClickListener {
-            saveSettings()
-            val path = editImagePath.text.toString().trim()
-            if (path.isEmpty()) {
-                toast(getString(R.string.toast_fill_image_path))
-                return@setOnClickListener
-            }
-            appendLog(getString(R.string.log_open_image))
-            coordinator.openImage(path, defaultTitle(path))
+        findViewById<Button>(R.id.btnConfig).setOnClickListener {
+            startActivityForResult(
+                android.content.Intent(this, ConfigActivity::class.java),
+                REQ_CONFIG,
+            )
         }
-        findViewById<Button>(R.id.btnOpenSettings).setOnClickListener {
-            saveSettings()
-            val index = spSettingsPage.selectedItemPosition.coerceIn(0, SETTINGS_PAGES.lastIndex)
-            val page = SETTINGS_PAGES.getOrNull(index)?.first ?: "wifi"
-            appendLog(getString(R.string.log_open_settings, page))
-            coordinator.openSettingsPage(page)
-        }
+
+
         findViewById<Button>(R.id.btnGrantFunctionPermission).setOnClickListener {
             appendLog(coordinator.featureSummary())
         }
@@ -206,7 +147,13 @@ class MainActivity : Activity(), ExecutionListener {
             renderSvg()
         }
 
-        onProviderChanged() // 初次渲染（自定义时才显示 Base URL 字段）
+        refreshModelInfo() // 初始渲染右上角 model 信息
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // 从 ConfigActivity 返回后刷新右上角生效的 provider / model 信息
+        refreshModelInfo()
     }
 
     override fun onDestroy() {
@@ -316,28 +263,20 @@ class MainActivity : Activity(), ExecutionListener {
         if (chkAutoRun.isChecked) runAgent() else toast(getString(R.string.voice_recognized_confirm))
     }
 
-    /** 切换供应商时：Base URL 仅在选择“自定义”时显示；同步右上角 model 信息。 */
-    private fun onProviderChanged() {
-        val provider = AiProvider.fromId(selectedProviderId()) ?: AiProvider.DEEPSEEK
-        val isCustom = provider == AiProvider.CUSTOM
-        val baseVisibility = if (isCustom) View.VISIBLE else View.GONE
-        lblBaseUrl.visibility = baseVisibility
-        editBaseUrl.visibility = baseVisibility
-
-        // 未手动填模型时，提示栏展示当前生效模型
-        val effectiveModel = editModel.text.toString().trim()
-            .ifEmpty { provider.defaultModel }
-        tvModelInfo.text = getString(R.string.model_info_format, provider.id, effectiveModel)
+    /** 读取共享配置，同步右上角 model 信息（AI 配置在 ConfigActivity 编辑）。 */
+    private fun refreshModelInfo() {
+        val provider = AiProvider.fromId(prefs.getString(KEY_PROVIDER, AiProvider.DEEPSEEK.id) ?: "")
+            ?: AiProvider.DEEPSEEK
+//        val model = prefs.getString(KEY_MODEL, "")?.trim().takeIf { it.isNotEmpty() }
+//            ?: provider.defaultModel
+//        tvModelInfo.text = getString(R.string.model_info_format, provider.id, model)
     }
 
-    private fun selectedProviderId(): String =
-        AiProvider.entries.getOrNull(spProvider.selectedItemPosition)?.id ?: AiProvider.DEEPSEEK.id
-
     private fun collectConfig(): AiConfig = AiConfig(
-        providerId = selectedProviderId(),
-        apiKey = editApiKey.text.toString().trim(),
-        baseUrl = editBaseUrl.text.toString().trim(),
-        model = editModel.text.toString().trim(),
+        providerId = prefs.getString(KEY_PROVIDER, AiProvider.DEEPSEEK.id) ?: AiProvider.DEEPSEEK.id,
+        apiKey = prefs.getString(KEY_API, "") ?: "",
+        baseUrl = prefs.getString(KEY_BASE_URL, "") ?: "",
+        model = prefs.getString(KEY_MODEL, "") ?: "",
     )
 
     // ---------------- 智能体 ----------------
@@ -451,14 +390,9 @@ class MainActivity : Activity(), ExecutionListener {
 
     // ---------------- 配置持久化 / UI 工具 ----------------
 
+    /** 仅持久化首页这边的配置；AI 连接配置（供应商 / API Key / 模型 / Base URL）由 ConfigActivity 维护。 */
     private fun saveSettings() {
         prefs.edit()
-            .putString(KEY_PROVIDER, selectedProviderId())
-            .putString(KEY_API, editApiKey.text.toString().trim())
-            .putString(KEY_MODEL, editModel.text.toString().trim())
-            .putString(KEY_BASE_URL, editBaseUrl.text.toString().trim())
-            .putString(KEY_IMAGE_PATH, editImagePath.text.toString().trim())
-            .putString(KEY_VIDEO_PATH, editVideoPath.text.toString().trim())
             .putString(KEY_PROMPT, editPrompt.text.toString().trim())
             .putBoolean(KEY_VOICE_AUTORUN, chkAutoRun.isChecked)
             .apply()

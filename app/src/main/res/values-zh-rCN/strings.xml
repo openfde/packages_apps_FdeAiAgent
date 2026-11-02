@@ -4,6 +4,14 @@
     <!-- ================= 顶栏 ================= -->
     <string name="tv_subtitle">AI × Skill × AppFunctions</string>
     <string name="status_ready">就绪</string>
+    <string name="home_config_entry">⚙ 配置</string>
+
+    <!-- ================= ConfigActivity（API Key 配置页） ================= -->
+    <string name="config_title">API Key 配置</string>
+    <string name="config_section_title">AI 连接配置</string>
+    <string name="config_save">保存</string>
+    <string name="config_back">返回</string>
+    <string name="config_saved">配置已保存</string>
 
     <!-- ================= AI 供应商 ================= -->
     <string name="provider_deepseek">DeepSeek（深度求索）</string>
@@ -84,7 +92,7 @@
     <string name="sherpa_recognize_error">识别过程出错：%1$s</string>
 
     <string name="toast_fill_image_path">请填写图片路径</string>
-    <string name="toast_select_provider">请先选择 AI 供应商并填写 API Key</string>
+    <string name="toast_select_provider">请先配置 API Key（在首页右上角「⚙ 配置」中填写）</string>
     <string name="toast_fill_custom_base_url">请填写自定义 Base URL</string>
     <string name="toast_enter_prompt">请输入智能体指令</string>
 
@@ -124,7 +132,7 @@
 AppFunction 调用相册/设置/文件管理器等应用暴露的真实能力。
 
 【使用步骤】
-1. 左上角选择 AI 供应商并填写 API Key（在各平台申请），模型可留空用默认；
+1. 点击右上角「⚙ 配置」选择 AI 供应商并填写 API Key（在各平台申请），模型可留空用默认；
 2. 在「智能体指令」框输入自然语言指令，点击「运行智能体」；
 3. 也可点击 🎤 语音输入，识别后勾选「识别后自动运行」便直接执行；
 4. 中栏 SVG 面板实时展示执行流程，右栏运行日志输出每一步的结果。

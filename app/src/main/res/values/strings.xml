@@ -4,6 +4,14 @@
     <!-- ================= Top bar ================= -->
     <string name="tv_subtitle">AI × Skill × AppFunctions</string>
     <string name="status_ready">Ready</string>
+    <string name="home_config_entry">⚙ Config</string>
+
+    <!-- ================= ConfigActivity (API Key configuration) ================= -->
+    <string name="config_title">API Key Configuration</string>
+    <string name="config_section_title">AI Connection</string>
+    <string name="config_save">Save</string>
+    <string name="config_back">Back</string>
+    <string name="config_saved">Configuration saved</string>
 
     <!-- ================= AI providers ================= -->
     <string name="provider_deepseek">DeepSeek</string>
@@ -84,7 +92,7 @@
     <string name="sherpa_recognize_error">Recognition failed: %1$s</string>
 
     <string name="toast_fill_image_path">Please fill in the image path</string>
-    <string name="toast_select_provider">Please select an AI provider and fill in the API Key</string>
+    <string name="toast_select_provider">Please configure the API Key first (via ⚙ Config in the top-right corner)</string>
     <string name="toast_fill_custom_base_url">Please fill in a custom Base URL</string>
     <string name="toast_enter_prompt">Please enter the agent instruction</string>
 
@@ -125,8 +133,8 @@ multi-step flows, and AppFunction calls the real capabilities exposed by Gallery
 file manager apps.
 
 [How to use]
-1. Select an AI provider in the top-left and fill in the API Key (apply on each platform);
-   the model can be left blank to use the default;
+1. Tap "⚙ Config" in the top-right corner to select an AI provider and fill in the API Key
+   (apply on each platform); the model can be left blank to use the default;
 2. Type a natural-language instruction in the "Agent Prompt" box and click "Run Agent";
 3. You can also click 🎤 Voice input; after recognition, tick "Run automatically after
    recognition" to execute directly;

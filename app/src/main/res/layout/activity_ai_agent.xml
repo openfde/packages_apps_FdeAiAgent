@@ -22,6 +22,7 @@
         android:gravity="center_vertical"
         android:orientation="horizontal"
         android:paddingStart="20dp"
+        android:visibility="gone"
         android:paddingEnd="20dp">
 
         <ImageView
@@ -52,18 +53,7 @@
             android:layout_height="1dp"
             android:layout_weight="1" />
 
-        <TextView
-            android:id="@+id/tvStatus"
-            android:layout_width="wrap_content"
-            android:layout_height="26dp"
-            android:background="@drawable/bg_chip"
-            android:gravity="center"
-            android:paddingStart="14dp"
-            android:paddingEnd="14dp"
-            android:text="@string/status_ready"
-            android:textColor="@color/pc_primary"
-            android:textSize="12sp"
-            tools:text="@string/status_ready" />
+
     </LinearLayout>
 
     <View
@@ -85,169 +75,82 @@
             android:layout_height="match_parent"
             android:background="@drawable/bg_panel"
             android:orientation="vertical"
-            android:padding="20dp">
+            android:paddingVertical="8dp"
+            android:paddingHorizontal="16dp">
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/section_agent_config"
-                android:textAppearance="@style/TextAppearance.PcSectionTitle" />
 
-            <View
+            <!-- AI 连接配置（供应商 / API Key / 模型 / Base URL）已移入 ConfigActivity，
+                 首页右上角「⚙ 配置」入口进入设置。 -->
+
+            <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="1dp"
-                android:layout_marginTop="12dp"
-                android:layout_marginBottom="16dp"
-                android:background="@color/pc_divider" />
-
-            <TextView
-                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="@string/label_provider"
-                android:textAppearance="@style/TextAppearance.PcLabel" />
+                android:layout_marginBottom="8dp"
+                android:gravity="right"
+                android:orientation="horizontal">
 
-            <Spinner
-                android:id="@+id/spProvider"
+                <TextView
+                    android:id="@+id/tvStatus"
+                    android:layout_width="wrap_content"
+                    android:layout_height="26dp"
+                    android:background="@drawable/bg_chip"
+                    android:gravity="center"
+                    android:paddingStart="14dp"
+                    android:paddingEnd="14dp"
+                    android:text="@string/status_ready"
+                    android:textColor="@color/pc_primary"
+                    android:textSize="12sp"
+                    tools:text="@string/status_ready" />
+
+                <Button
+                    android:id="@+id/btnConfig"
+                    android:layout_width="wrap_content"
+                    android:layout_height="30dp"
+                    android:layout_marginStart="10dp"
+                    android:background="@drawable/bg_btn_secondary"
+                    android:paddingStart="16dp"
+                    android:paddingEnd="16dp"
+                    android:stateListAnimator="@null"
+                    android:text="@string/home_config_entry"
+                    android:textColor="@color/pc_text_regular"
+                    android:textSize="12sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <ScrollView
+                android:id="@+id/svLog"
                 android:layout_width="match_parent"
-                android:layout_height="40dp"
-                android:layout_marginTop="6dp"
-                android:background="@drawable/bg_input"
-                android:paddingStart="8dp"
-                android:paddingEnd="8dp"
-                android:spinnerMode="dropdown" />
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:background="@drawable/bg_console"
+                android:clipToPadding="false"
+                android:fadeScrollbars="false"
+                android:fillViewport="true"
+                android:padding="14dp"
+                android:scrollbars="vertical">
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:text="@string/label_api_key"
-                android:textAppearance="@style/TextAppearance.PcLabel" />
+                <TextView
+                    android:id="@+id/tvAgentLog"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:breakStrategy="simple"
+                    android:fontFamily="monospace"
+                    android:lineSpacingExtra="3dp"
+                    android:scrollHorizontally="false"
+                    android:text="@string/log_waiting"
+                    android:textColor="@color/pc_console_text"
+                    android:textIsSelectable="true"
+                    android:textSize="13sp" />
+            </ScrollView>
 
-            <EditText
-                android:id="@+id/editApiKey"
-                android:layout_width="match_parent"
-                android:layout_height="40dp"
-                android:layout_marginTop="6dp"
-                android:background="@drawable/bg_input"
-                android:hint="@string/hint_api_key"
-                android:importantForAutofill="no"
-                android:inputType="textPassword"
-                android:paddingStart="12dp"
-                android:paddingEnd="12dp"
-                android:singleLine="true"
-                android:textColor="@color/pc_text_primary"
-                android:textColorHint="@color/pc_text_secondary"
-                android:textSize="13sp" />
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="14dp"
-                android:text="@string/label_model"
-                android:visibility="gone"
-                android:textAppearance="@style/TextAppearance.PcLabel" />
-
-            <EditText
-                android:id="@+id/editModel"
-                android:layout_width="match_parent"
-                android:layout_height="40dp"
-                android:layout_marginTop="6dp"
-                android:background="@drawable/bg_input"
-                android:hint="@string/hint_model"
-                android:inputType="text"
-                android:paddingStart="12dp"
-                android:paddingEnd="12dp"
-                android:visibility="gone"
-                android:singleLine="true"
-                android:textColor="@color/pc_text_primary"
-                android:textColorHint="@color/pc_text_secondary"
-                android:textSize="13sp" />
-
-            <TextView
-                android:id="@+id/lblBaseUrl"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="14dp"
-                android:text="@string/label_base_url"
-                android:textAppearance="@style/TextAppearance.PcLabel"
-                android:visibility="gone" />
-
-            <EditText
-                android:id="@+id/editBaseUrl"
-                android:layout_width="match_parent"
-                android:layout_height="40dp"
-                android:layout_marginTop="6dp"
-                android:background="@drawable/bg_input"
-                android:hint="@string/hint_base_url"
-                android:importantForAutofill="no"
-                android:inputType="textUri"
-                android:paddingStart="12dp"
-                android:paddingEnd="12dp"
-                android:singleLine="true"
-                android:textColor="@color/pc_text_primary"
-                android:textColorHint="@color/pc_text_secondary"
-                android:textSize="13sp"
-                android:visibility="gone" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="14dp"
-                android:visibility="gone" 
-                android:text="@string/label_image_path"
-                android:textAppearance="@style/TextAppearance.PcLabel" />
-
-            <EditText
-                android:id="@+id/editImagePath"
-                android:layout_width="match_parent"
-                android:layout_height="40dp"
-                android:layout_marginTop="6dp"
-                android:background="@drawable/bg_input"
-                android:hint="@string/hint_image_path"
-                android:inputType="text"
-                android:paddingStart="12dp"
-                android:paddingEnd="12dp"
-                android:visibility="gone" 
-                android:singleLine="true"
-                android:textColor="@color/pc_text_primary"
-                android:textColorHint="@color/pc_text_secondary"
-                android:textSize="13sp" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="14dp"
-                android:visibility="gone" 
-                android:text="@string/label_video_path"
-                android:textAppearance="@style/TextAppearance.PcLabel" />
-
-            <EditText
-                android:id="@+id/editVideoPath"
-                android:layout_width="match_parent"
-                android:layout_height="40dp"
-                android:layout_marginTop="6dp"
-                android:background="@drawable/bg_input"
-                android:hint="@string/hint_video_path"
-                android:inputType="text"
-                android:paddingStart="12dp"
-                android:paddingEnd="12dp"
-                android:visibility="gone" 
-                android:singleLine="true"
-                android:textColor="@color/pc_text_primary"
-                android:textColorHint="@color/pc_text_secondary"
-                android:textSize="13sp" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="14dp"
-                android:text="@string/label_agent_prompt"
-                android:textAppearance="@style/TextAppearance.PcLabel" />
 
             <EditText
                 android:id="@+id/editAgentPrompt"
                 android:layout_width="match_parent"
-                android:layout_height="80dp"
+                android:layout_height="wrap_content"
+                android:minHeight="100dp"
+                android:maxHeight="300dp"
                 android:layout_marginTop="6dp"
                 android:background="@drawable/bg_input"
                 android:gravity="top|start"
@@ -265,6 +168,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
+                android:visibility="gone"
                 android:text="@string/label_voice_input"
                 android:textAppearance="@style/TextAppearance.PcLabel" />
 
@@ -273,6 +177,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="40dp"
                 android:layout_marginTop="6dp"
+                android:visibility="gone"
                 android:background="@drawable/bg_btn_primary"
                 android:stateListAnimator="@null"
                 android:text="@string/btn_voice_input"
@@ -285,6 +190,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="6dp"
                 android:gravity="center_vertical"
+                android:visibility="gone"
                 android:orientation="horizontal">
 
                 <CheckBox
@@ -318,16 +224,7 @@
                 android:textColor="@color/pc_text_secondary"
                 android:textSize="11sp" />
 
-            <View
-                android:layout_width="match_parent"
-                android:layout_height="0dp"
-                android:layout_weight="1" />
 
-            <View
-                android:layout_width="match_parent"
-                android:layout_height="1dp"
-                android:layout_marginBottom="12dp"
-                android:background="@color/pc_divider" />
 
             <Button
                 android:id="@+id/btnRunAgent"
@@ -336,9 +233,11 @@
                 android:background="@drawable/bg_btn_primary"
                 android:stateListAnimator="@null"
                 android:text="@string/btn_run_agent"
+                android:layout_marginTop="16dp"
                 android:textColor="#FFFFFF"
                 android:textSize="15sp"
                 android:textStyle="bold" />
+
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -424,6 +323,7 @@
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="1"
+            android:visibility="gone"
             android:background="@drawable/bg_panel"
             android:orientation="vertical"
             android:padding="14dp">
@@ -494,6 +394,7 @@
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="1"
+            android:visibility="gone"
             android:background="@drawable/bg_panel"
             android:orientation="vertical"
             android:padding="14dp">
@@ -504,16 +405,6 @@
                 android:gravity="center_vertical"
                 android:orientation="horizontal">
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/section_log"
-                    android:textAppearance="@style/TextAppearance.PcSectionTitle" />
-
-                <View
-                    android:layout_width="0dp"
-                    android:layout_height="1dp"
-                    android:layout_weight="1" />
 
                 <TextView
                     android:id="@+id/tvModelInfo"
@@ -532,31 +423,7 @@
                 android:layout_marginBottom="10dp"
                 android:background="@color/pc_divider" />
 
-            <ScrollView
-                android:id="@+id/svLog"
-                android:layout_width="match_parent"
-                android:layout_height="0dp"
-                android:layout_weight="1"
-                android:background="@drawable/bg_console"
-                android:clipToPadding="false"
-                android:fadeScrollbars="false"
-                android:fillViewport="true"
-                android:padding="14dp"
-                android:scrollbars="vertical">
 
-                <TextView
-                    android:id="@+id/tvAgentLog"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:breakStrategy="simple"
-                    android:fontFamily="monospace"
-                    android:lineSpacingExtra="3dp"
-                    android:scrollHorizontally="false"
-                    android:text="@string/log_waiting"
-                    android:textColor="@color/pc_console_text"
-                    android:textIsSelectable="true"
-                    android:textSize="13sp" />
-            </ScrollView>
         </LinearLayout>
     </LinearLayout>
 </LinearLayout>
