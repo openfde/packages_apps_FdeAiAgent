@@ -38,7 +38,7 @@
     <string name="chk_auto_run">Run automatically after recognition</string>
     <string name="voice_status_default">Click 🎤 to start voice input</string>
     <string name="available_skills">Available Skills: gallery / file_search / file_op / settings / app_open / task_create / file_find / file_delete / curated_apps</string>
-    <string name="btn_run_agent">Run Agent</string>
+    <string name="btn_run_agent">Run</string>
     <string name="btn_open_gallery">Open Gallery</string>
     <string name="btn_feature_desc">Features</string>
     <string name="feature_desc_title">Features</string>

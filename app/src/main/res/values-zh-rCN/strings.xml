@@ -38,7 +38,7 @@
     <string name="chk_auto_run">识别后自动运行</string>
     <string name="voice_status_default">点击🎤开始语音输入</string>
     <string name="available_skills">可用 Skill：gallery / file_search / file_op / settings / app_open / task_create / file_find / file_delete / curated_apps</string>
-    <string name="btn_run_agent">运行智能体</string>
+    <string name="btn_run_agent">发送</string>
     <string name="btn_open_gallery">打开相册</string>
     <string name="btn_feature_desc">功能说明</string>
     <string name="feature_desc_title">功能说明</string>
