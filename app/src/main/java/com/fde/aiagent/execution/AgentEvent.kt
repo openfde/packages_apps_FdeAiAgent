@@ -27,6 +27,9 @@ sealed interface AgentEvent {
     /** 一条普通日志，用于运行日志控制台 / SVG 面板的日志尾部。 */
     data class Logged(val text: String) : AgentEvent
 
+    /** 模型直接回答（未调用任何 Skill / AppFunction），SVG 面板把它展示为回答卡片。 */
+    data class Answered(val text: String) : AgentEvent
+
     /** 整个流程成功完成。 */
     data class FlowFinished(val summary: String) : AgentEvent
 

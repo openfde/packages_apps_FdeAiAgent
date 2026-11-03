@@ -92,14 +92,10 @@ class AgentCoordinator(context: Context) {
 
                 when (plan) {
                     is ModelPlan.Answer -> {
-                        //model 直接回答
-//                        emit(
-//                            AgentEvent.NodeFinished(
-//                                planNode.asDone(appContext.getString(R.string.plan_done_direct_answer)),
-//                            ),
-//                        )
+                        // model 直接回答：不调度任何 Skill / AppFunction，
+                        // 以 Answered 事件驱动 SVG 面板展示回答结果卡片。
                         emit(AgentEvent.Logged("← ${plan.text}"))
-                        emit(AgentEvent.FlowFinished(plan.text))
+                        emit(AgentEvent.Answered(plan.text))
                     }
 
                     is ModelPlan.RunSkills -> {

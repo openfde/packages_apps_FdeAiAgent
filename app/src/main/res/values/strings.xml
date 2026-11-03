@@ -238,6 +238,7 @@
 
     <!-- ================= SVG state panel ================= -->
     <string name="svg_title">Execution Flow (SVG Panel)</string>
+    <string name="svg_answer_title">AI Answer</string>
     <string name="svg_phase_idle">Idle</string>
     <string name="svg_phase_executing">Executing…</string>
     <string name="svg_phase_executing_node">Executing: %1$s</string>

@@ -11,12 +11,14 @@ import com.fde.aiagent.execution.FlowNodeStatus
 /**
  * SVG 状态面板 —— 把统一的执行事件渲染成 SVG 流程图。
  *
- * 订阅 [AgentEvent] 驱动内部状态：
- *  - 每个 Skill 步骤对应一个节点，颜色/标记随状态变化（等待/执行中/成功/失败/跳过）；
- *  - 顶部显示当前阶段（待机 / 执行中 / 完成 / 失败）；
- *  - 底部展示错误提示横幅与最近 N 条运行日志。
+ * 订阅 [AgentEvent] 驱动内部状态，并**保留之前的结果、最新的在最底下**：
+ *  - 一轮 Skill / AppFunction 执行 → 对应一个完整的状态面板（流程节点 / 日志 / 错误）；
+ *  - 一次模型直接回答（[AgentEvent.Answered]，未调用任何 Skill / AppFunction）→
+ *    对应一张回答卡片，直接展示回答结果；
+ *  - 每一轮结束后，面板会被保留在历史里，新一轮的结果追加在面板最底部；
+ *    「清除日志」按钮调用 [reset] 才会清空全部历史。
  *
- * render() 生成完整 SVG 字符串，由 Activity 的 WebView 加载展示。
+ * render() 生成多个堆叠的 SVG 字符串，由 Activity 的 WebView 加载展示。
  * 所有文案来自 @string/…（自动适配中英文）；颜色根据系统 uiMode 在浅色/深色调色板间切换。
  */
 class SvgStateRenderer(private val context: Context) {
@@ -110,7 +112,28 @@ class SvgStateRenderer(private val context: Context) {
     private val nodeStep = 78
     private val flowTop = 92
     private val maxLogTail = 6
+    /** 相邻两块面板之间的垂直间距。 */
+    private val panelGap = 14
 
+    // ---- 面板模型（保留之前的结果，最新在最底下）----
+    private sealed class Panel
+
+    /** 一轮 Skill / AppFunction 执行的状态面板快照。 */
+    private class FlowPanel(
+        val nodes: Map<String, FlowNode>,
+        val logTail: List<String>,
+        val error: String?,
+        val phase: Phase,
+        val phaseLabel: String,
+    ) : Panel()
+
+    /** 一次直接回答（未调度任何 Skill / AppFunction）的答案卡片。 */
+    private class AnswerPanel(val text: String) : Panel()
+
+    /** 已完成并保留的历史面板（旧 → 新）。 */
+    private val panels = ArrayList<Panel>()
+
+    // ---- 当前进行中（或刚结束、尚未被下一轮替换）的一轮流程 ----
     private val nodes = LinkedHashMap<String, FlowNode>()
     private val logTail = ArrayList<String>()
     private var error: String? = null
@@ -119,7 +142,13 @@ class SvgStateRenderer(private val context: Context) {
 
     val currentPhase: Phase get() = phase
 
+    /** 清空全部历史与当前状态（「清除」按钮等需要整体重置的场景）。 */
     fun reset() {
+        panels.clear()
+        resetCurrent()
+    }
+
+    private fun resetCurrent() {
         nodes.clear()
         logTail.clear()
         error = null
@@ -130,7 +159,13 @@ class SvgStateRenderer(private val context: Context) {
     fun onEvent(event: AgentEvent) {
         when (event) {
             is AgentEvent.FlowStarted -> {
-                reset()
+                // 上一轮已经结束的流程面板先保留进历史，再开启新的一轮
+                if (phase != Phase.IDLE) {
+                    panels.add(
+                        FlowPanel(LinkedHashMap(nodes), ArrayList(logTail), error, phase, phaseLabel),
+                    )
+                }
+                resetCurrent()
                 phase = Phase.RUNNING
                 phaseLabel = context.getString(R.string.svg_phase_executing)
             }
@@ -159,6 +194,12 @@ class SvgStateRenderer(private val context: Context) {
                 while (logTail.size > maxLogTail) logTail.removeAt(0)
             }
 
+            is AgentEvent.Answered -> {
+                // 直接回答：不展示流程面板，丢弃未完成的流程节点，仅保留回答卡片
+                panels.add(AnswerPanel(event.text))
+                resetCurrent()
+            }
+
             is AgentEvent.FlowFinished -> {
                 phase = Phase.DONE
                 phaseLabel = context.getString(R.string.svg_phase_done)
@@ -174,43 +215,127 @@ class SvgStateRenderer(private val context: Context) {
         }
     }
 
-    /** 生成完整 SVG 字符串。 */
+    /** 生成完整 SVG 字符串：历史面板（含回答卡片）+ 当前进行中的一轮，按时间顺序从上到下堆叠。 */
     fun render(): String {
         val p = palette
         val sb = StringBuilder()
 
-        val errorLines = error?.let { wrap(it, 52) } ?: emptyList()
-        val hasLogs = logTail.isNotEmpty()
-
-        val errorH = if (errorLines.isEmpty()) 0 else errorLines.size * 16 + 18
-        val logH = if (hasLogs) logTail.size * 17 + 30 else 0
-        val flowH = nodes.size * nodeStep
-        val totalH = flowTop + flowH + 8 + errorH + (if (errorH > 0) 10 else 0) +
-            (if (logH > 0) 10 else 0) + logH + 16
-
-        sb.append("<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"$W\" height=\"$totalH\" viewBox=\"0 0 $W $totalH\">")
-        sb.append("  <rect width=\"$W\" height=\"$totalH\" fill=\"${p.svgBg}\"/>")
-
-        drawHeader(sb)
-        drawNodes(sb)
-
-        var y = flowTop + flowH + 8
-        if (errorH > 0) {
-            drawErrorBanner(sb, y, errorLines, errorH)
-            y += errorH + 10
-        }
-        if (logH > 0) {
-            drawLogBox(sb, y, logH)
+        if (panels.isEmpty() && phase == Phase.IDLE) {
+            renderEmpty(sb, p)
+            return sb.toString()
         }
 
-        sb.append("</svg>")
+        for (panel in panels) {
+            when (panel) {
+                is FlowPanel -> renderFlow(sb, p, panel)
+                is AnswerPanel -> renderAnswer(sb, p, panel)
+            }
+        }
+
+        // 当前进行中的一轮（尚未被下一轮 FlowStarted 替换）始终展示在最底下
+        if (phase != Phase.IDLE) {
+            renderFlow(sb, p, FlowPanel(LinkedHashMap(nodes), ArrayList(logTail), error, phase, phaseLabel))
+        }
+
         return sb.toString()
     }
 
-    // ---------- 绘制 ----------
+    // ---------- 面板绘制 ----------
 
-    private fun drawHeader(sb: StringBuilder) {
-        val p = palette
+    /** 空状态占位。 */
+    private fun renderEmpty(sb: StringBuilder, p: Palette) {
+        val totalH = 160
+        openPanelDiv(sb)
+        sb.append("<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"$W\" height=\"$totalH\" viewBox=\"0 0 $W $totalH\">")
+        sb.append("  <rect width=\"$W\" height=\"$totalH\" fill=\"${p.svgBg}\"/>")
+        sb.append("  <text x=\"34\" y=\"88\" font-size=\"13\" fill=\"${p.textSecondary}\">")
+            .append(e(context.getString(R.string.svg_empty))).append("</text>")
+        sb.append("</svg>")
+        closePanelDiv(sb)
+    }
+
+    /** 一轮流程的状态面板（标题 + 阶段胶囊 + 图例 + 节点 + 日志/错误）。 */
+    private fun renderFlow(sb: StringBuilder, p: Palette, panel: FlowPanel) {
+        val errorLines = panel.error?.let { wrap(it, 52) } ?: emptyList()
+        val hasLogs = panel.logTail.isNotEmpty()
+
+        val errorH = if (errorLines.isEmpty()) 0 else errorLines.size * 16 + 18
+        val logH = if (hasLogs) panel.logTail.size * 17 + 30 else 0
+        val flowH = panel.nodes.size * nodeStep
+        val totalH = flowTop + flowH + 8 + errorH + (if (errorH > 0) 10 else 0) +
+            (if (logH > 0) 10 else 0) + logH + 16
+
+        openPanelDiv(sb)
+        sb.append("<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"$W\" height=\"$totalH\" viewBox=\"0 0 $W $totalH\">")
+        sb.append("  <rect width=\"$W\" height=\"$totalH\" fill=\"${p.svgBg}\"/>")
+
+        drawHeader(sb, p, panel.phase, panel.phaseLabel)
+        drawNodes(sb, p, panel.nodes)
+
+        var y = flowTop + flowH + 8
+        if (errorH > 0) {
+            drawErrorBanner(sb, p, y, errorLines, errorH)
+            y += errorH + 10
+        }
+        if (logH > 0) {
+            drawLogBox(sb, p, y, panel.logTail, logH)
+        }
+
+        sb.append("</svg>")
+        closePanelDiv(sb)
+    }
+
+    /** 一次直接回答的答案卡片（标题 + 阶段胶囊 + 回答正文）。 */
+    private fun renderAnswer(sb: StringBuilder, p: Palette, panel: AnswerPanel) {
+        val text = panel.text.trim().ifEmpty { "…" }
+        val textLines = wrapAnswer(text, 48)
+        val lineH = 18
+        val textTop = 60
+        val textH = textLines.size * lineH
+        val totalH = textTop + textH + 16
+
+        openPanelDiv(sb)
+        sb.append("<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"$W\" height=\"$totalH\" viewBox=\"0 0 $W $totalH\">")
+        sb.append("  <rect width=\"$W\" height=\"$totalH\" fill=\"${p.svgBg}\"/>")
+
+        // 卡片
+        sb.append("  <rect x=\"$nodeX\" y=\"10\" width=\"$nodeW\" height=\"${totalH - 20}\" rx=\"10\" fill=\"${p.cardBg}\" stroke=\"${p.cardBorder}\"/>")
+        // 左侧状态条（回答 → 完成色）
+        sb.append("  <rect x=\"$nodeX\" y=\"10\" width=\"6\" height=\"${totalH - 20}\" rx=\"3\" fill=\"${p.pillDoneFg}\"/>")
+
+        // 标题
+        sb.append("  <text x=\"${nodeX + 18}\" y=\"36\" font-size=\"14\" font-weight=\"bold\" fill=\"${p.textPrimary}\">")
+            .append(e(context.getString(R.string.svg_answer_title))).append("</text>")
+
+        // 阶段胶囊：完成
+        val pillText = context.getString(R.string.svg_phase_done)
+        val pillW = (textWidth(pillText, 12) + 26).coerceAtLeast(60)
+        val pillX = W - pillW - 34
+        sb.append("  <rect x=\"$pillX\" y=\"18\" width=\"$pillW\" height=\"24\" rx=\"12\" fill=\"${p.pillDoneBg}\"/>")
+        sb.append("  <text x=\"").append(pillX + pillW / 2).append("\" y=\"36\" font-size=\"12\" text-anchor=\"middle\" fill=\"${p.pillDoneFg}\">")
+            .append(e(pillText)).append("</text>")
+
+        // 回答正文
+        textLines.forEachIndexed { i, line ->
+            sb.append("  <text x=\"${nodeX + 18}\" y=\"${textTop + i * lineH}\" font-size=\"13\" fill=\"${p.textRegular}\">")
+                .append(e(line)).append("</text>")
+        }
+
+        sb.append("</svg>")
+        closePanelDiv(sb)
+    }
+
+    // ---------- 单块面板内部绘制 ----------
+
+    private fun openPanelDiv(sb: StringBuilder) {
+        sb.append("<div style=\"margin-bottom:${panelGap}px\">")
+    }
+
+    private fun closePanelDiv(sb: StringBuilder) {
+        sb.append("</div>")
+    }
+
+    private fun drawHeader(sb: StringBuilder, p: Palette, panelPhase: Phase, panelLabel: String) {
         // 标题
         sb.append("  <text x=\"34\" y=\"30\" font-size=\"16\" font-weight=\"bold\" fill=\"${p.textPrimary}\">")
             .append(context.getString(R.string.svg_title))
@@ -218,11 +343,11 @@ class SvgStateRenderer(private val context: Context) {
 
         // 阶段胶囊（按中/英文字符宽度估算 + 超长截断）
         val pillTextLimit = 14
-        val pillText = if (phaseLabel.length > pillTextLimit) phaseLabel.take(pillTextLimit) + "…" else phaseLabel
+        val pillText = if (panelLabel.length > pillTextLimit) panelLabel.take(pillTextLimit) + "…" else panelLabel
         val pillW = (textWidth(pillText, 12) + 26).coerceAtLeast(60)
         val pillX = W - pillW - 34
-        sb.append("  <rect x=\"$pillX\" y=\"12\" width=\"$pillW\" height=\"24\" rx=\"12\" fill=\"").append(pillBg()).append("\"/>")
-        sb.append("  <text x=\"").append(pillX + pillW / 2).append("\" y=\"28\" font-size=\"12\" text-anchor=\"middle\" fill=\"").append(pillFg()).append("\">")
+        sb.append("  <rect x=\"$pillX\" y=\"12\" width=\"$pillW\" height=\"24\" rx=\"12\" fill=\"").append(pillBg(p, panelPhase)).append("\"/>")
+        sb.append("  <text x=\"").append(pillX + pillW / 2).append("\" y=\"28\" font-size=\"12\" text-anchor=\"middle\" fill=\"").append(pillFg(p, panelPhase)).append("\">")
             .append(e(pillText)).append("</text>")
 
         // 图例
@@ -243,16 +368,15 @@ class SvgStateRenderer(private val context: Context) {
         }
     }
 
-    private fun drawNodes(sb: StringBuilder) {
-        val p = palette
-        if (nodes.isEmpty()) {
+    private fun drawNodes(sb: StringBuilder, p: Palette, nodeMap: Map<String, FlowNode>) {
+        if (nodeMap.isEmpty()) {
             sb.append("  <text x=\"34\" y=\"").append(flowTop + 10)
                 .append("\" font-size=\"13\" fill=\"${p.textSecondary}\">")
                 .append(context.getString(R.string.svg_empty)).append("</text>")
             return
         }
 
-        val order = nodes.values.toList()
+        val order = nodeMap.values.toList()
         order.forEachIndexed { index, node ->
             val top = flowTop + index * nodeStep
             val color = statusColor(node.status)
@@ -275,7 +399,7 @@ class SvgStateRenderer(private val context: Context) {
                 .append(e(truncate(detail, 78))).append("</text>")
 
             // 连接线（含箭头）
-            if (index < nodes.size - 1) {
+            if (index < nodeMap.size - 1) {
                 val cx = 250
                 val fromY = top + nodeH
                 val toY = nextTop
@@ -285,8 +409,7 @@ class SvgStateRenderer(private val context: Context) {
         }
     }
 
-    private fun drawErrorBanner(sb: StringBuilder, y: Int, lines: List<String>, h: Int) {
-        val p = palette
+    private fun drawErrorBanner(sb: StringBuilder, p: Palette, y: Int, lines: List<String>, h: Int) {
         sb.append("  <rect x=\"$nodeX\" y=\"$y\" width=\"$nodeW\" height=\"$h\" rx=\"8\" fill=\"${p.errorBg}\" stroke=\"#F56C6C\"/>")
         sb.append("  <text x=\"${nodeX + 12}\" y=\"${y + 18}\" font-size=\"12\" font-weight=\"bold\" fill=\"${p.errorText}\">")
             .append(context.getString(R.string.svg_error_banner)).append("</text>")
@@ -296,12 +419,11 @@ class SvgStateRenderer(private val context: Context) {
         }
     }
 
-    private fun drawLogBox(sb: StringBuilder, y: Int, h: Int) {
-        val p = palette
+    private fun drawLogBox(sb: StringBuilder, p: Palette, y: Int, logLines: List<String>, h: Int) {
         sb.append("  <rect x=\"$nodeX\" y=\"$y\" width=\"$nodeW\" height=\"$h\" rx=\"8\" fill=\"${p.logBoxBg}\" stroke=\"${p.logBoxBorder}\"/>")
         sb.append("  <text x=\"${nodeX + 12}\" y=\"${y + 18}\" font-size=\"12\" font-weight=\"bold\" fill=\"${p.textPrimary}\">")
             .append(context.getString(R.string.svg_log_box)).append("</text>")
-        logTail.forEachIndexed { i, line ->
+        logLines.forEachIndexed { i, line ->
             sb.append("  <text x=\"${nodeX + 12}\" y=\"${y + 36 + i * 17}\" font-family=\"monospace\" font-size=\"11\" fill=\"${p.textRegular}\">")
                 .append(e(truncate(line, 66))).append("</text>")
         }
@@ -333,18 +455,18 @@ class SvgStateRenderer(private val context: Context) {
         FlowNodeKind.REPORT -> context.getString(R.string.svg_kind_report)
     }
 
-    private fun pillBg(): String = when (phase) {
-        Phase.IDLE -> palette.pillIdleBg
-        Phase.RUNNING -> palette.pillRunningBg
-        Phase.DONE -> palette.pillDoneBg
-        Phase.FAILED -> palette.pillFailedBg
+    private fun pillBg(p: Palette, panelPhase: Phase): String = when (panelPhase) {
+        Phase.IDLE -> p.pillIdleBg
+        Phase.RUNNING -> p.pillRunningBg
+        Phase.DONE -> p.pillDoneBg
+        Phase.FAILED -> p.pillFailedBg
     }
 
-    private fun pillFg(): String = when (phase) {
-        Phase.IDLE -> palette.pillIdleFg
-        Phase.RUNNING -> palette.pillRunningFg
-        Phase.DONE -> palette.pillDoneFg
-        Phase.FAILED -> palette.pillFailedFg
+    private fun pillFg(p: Palette, panelPhase: Phase): String = when (panelPhase) {
+        Phase.IDLE -> p.pillIdleFg
+        Phase.RUNNING -> p.pillRunningFg
+        Phase.DONE -> p.pillDoneFg
+        Phase.FAILED -> p.pillFailedFg
     }
 
     private fun firstLine(text: String): String {
@@ -369,6 +491,25 @@ class SvgStateRenderer(private val context: Context) {
             rest = rest.substring(cut.coerceAtLeast(1)).trim()
         }
         if (rest.isNotEmpty()) lines.add(rest)
+        return lines
+    }
+
+    /** 回答正文换行：保留原有换行，超长行按字符宽度折行。 */
+    private fun wrapAnswer(text: String, maxChars: Int): List<String> {
+        val lines = ArrayList<String>()
+        for (rawLine in text.split("\n")) {
+            var line = rawLine.trimEnd()
+            if (line.isEmpty()) {
+                lines.add("")
+                continue
+            }
+            while (line.length > maxChars) {
+                val cut = line.indexOf(' ', maxChars).let { if (it in 0..maxChars + 20) it else maxChars }
+                lines.add(line.substring(0, cut.coerceAtLeast(1)).trimEnd())
+                line = line.substring(cut.coerceAtLeast(1)).trimStart()
+            }
+            lines.add(line)
+        }
         return lines
     }
 

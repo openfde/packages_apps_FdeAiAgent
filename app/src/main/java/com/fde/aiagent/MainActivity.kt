@@ -308,7 +308,8 @@ class MainActivity : Activity(), ExecutionListener {
     private fun handleEvent(event: AgentEvent) {
         when (event) {
             is AgentEvent.FlowStarted -> {
-                renderer.reset()
+                // 保留之前的结果：交由 renderer 提交上一轮面板并开启新的一轮
+                renderer.onEvent(event)
                 tvError.visibility = View.GONE
                 setStatus(getString(R.string.status_executing), R.color.pc_warning)
                 renderSvg()
@@ -333,6 +334,12 @@ class MainActivity : Activity(), ExecutionListener {
                 }
                 node?.let { setStatus(getString(R.string.status_executing), R.color.pc_warning) }
                 if (event is AgentEvent.NodeFailed) showError(event.error)
+                renderSvg()
+            }
+
+            is AgentEvent.Answered -> {
+                renderer.onEvent(event)
+                setStatus(getString(R.string.status_done), R.color.pc_success)
                 renderSvg()
             }
 

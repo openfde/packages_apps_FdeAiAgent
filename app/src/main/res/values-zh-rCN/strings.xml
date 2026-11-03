@@ -238,6 +238,7 @@
 
     <!-- ================= SVG 状态面板 ================= -->
     <string name="svg_title">执行流程（SVG 状态面板）</string>
+    <string name="svg_answer_title">AI 回答</string>
     <string name="svg_phase_idle">待机</string>
     <string name="svg_phase_executing">执行中…</string>
     <string name="svg_phase_executing_node">正在执行: %1$s</string>
