@@ -19,6 +19,12 @@
         <activity
             android:name=".MainActivity"
             android:exported="true">
+
+            <layout
+                android:defaultHeight="713dp"
+                android:defaultWidth="412dp"
+                android:minHeight="713dp"
+                android:minWidth="412dp" />
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
