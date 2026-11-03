@@ -253,7 +253,7 @@
     <string name="svg_legend_done">成功</string>
     <string name="svg_legend_failed">失败</string>
     <string name="svg_legend_skipped">跳过</string>
-    <string name="svg_empty">暂无执行记录，运行一次任务后展示流程图。</string>
+    <string name="svg_empty">" 暂无执行记录，运行一次任务后展示结果。"</string>
     <string name="svg_error_banner">错误提示</string>
     <string name="svg_log_box">运行日志（尾部）</string>
     <string name="svg_status_pending">等待</string>

@@ -253,7 +253,7 @@
     <string name="svg_legend_done">Succeeded</string>
     <string name="svg_legend_failed">Failed</string>
     <string name="svg_legend_skipped">Skipped</string>
-    <string name="svg_empty">No execution records. Run a task to see the flow chart.</string>
+    <string name="svg_empty">" No execution records. Run a task to see the answer."</string>
     <string name="svg_error_banner">Error</string>
     <string name="svg_log_box">Run Log (tail)</string>
     <string name="svg_status_pending">Pending</string>
