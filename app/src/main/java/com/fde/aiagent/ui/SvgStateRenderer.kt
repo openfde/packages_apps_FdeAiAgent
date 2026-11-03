@@ -432,10 +432,10 @@ class SvgStateRenderer(private val context: Context) {
     }
 
     private fun drawLogBox(sb: StringBuilder, p: Palette, y: Int, logLines: List<String>, h: Int) {
-        sb.append("  <rect x=\"$nodeX\" y=\"$y\" width=\"$nodeW\" height=\"$h\" rx=\"8\" fill=\"${p.logBoxBg}\" stroke=\"${p.logBoxBorder}\"/>")
-        sb.append("  <text x=\"${nodeX + 12}\" y=\"${y + 18}\" font-size=\"12\" font-weight=\"bold\" fill=\"${p.textPrimary}\">")
-//            .append(context.getString(R.string.svg_log_box))
-            .append("</text>")
+//         sb.append("  <rect x=\"$nodeX\" y=\"$y\" width=\"$nodeW\" height=\"$h\" rx=\"8\" fill=\"${p.logBoxBg}\" stroke=\"${p.logBoxBorder}\"/>")
+//         sb.append("  <text x=\"${nodeX + 12}\" y=\"${y + 18}\" font-size=\"12\" font-weight=\"bold\" fill=\"${p.textPrimary}\">")
+// //            .append(context.getString(R.string.svg_log_box))
+//             .append("</text>")
 //        logLines.forEachIndexed { i, line ->
 //            sb.append("  <text x=\"${nodeX + 12}\" y=\"${y + 36 + i * 17}\" font-family=\"monospace\" font-size=\"11\" fill=\"${p.textRegular}\">")
 //                .append(e(truncate(line, 66))).append("</text>")
