@@ -43,14 +43,14 @@ enum class AiProvider(
         id = "zhipu",
         labelRes = R.string.provider_zhipu,
         apiUrl = "https://open.bigmodel.cn/api/paas/v4/chat/completions",
-        defaultModel = "glm-4-plus",
+        defaultModel = "glm-5.3",
         openAiCompatible = true,
     ),
     KIMI(
         id = "kimi",
         labelRes = R.string.provider_kimi,
         apiUrl = "https://api.moonshot.cn/v1/chat/completions",
-        defaultModel = "moonshot-v1-8k",
+        defaultModel = "Kimi K3",
         openAiCompatible = true,
     ),
     GEMINI(
@@ -61,13 +61,7 @@ enum class AiProvider(
         openAiCompatible = false,
     ),
     /** 任意 OpenAI 兼容端点（baseUrl / 模型由用户在界面上填写）。 */
-    CUSTOM(
-        id = "custom",
-        labelRes = R.string.provider_custom,
-        apiUrl = "",
-        defaultModel = "gpt-4o",
-        openAiCompatible = true,
-    );
+ ;
 
     companion object {
         fun fromId(id: String): AiProvider? = entries.firstOrNull { it.id == id }

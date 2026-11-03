@@ -92,10 +92,10 @@ class ConfigActivity : Activity() {
 
     /** 切换供应商时：Base URL 仅在选择「自定义」时显示。 */
     private fun onProviderChanged() {
-        val isCustom = AiProvider.entries
-            .getOrNull(spProvider.selectedItemPosition) == AiProvider.CUSTOM
-        lblBaseUrl.visibility = if (isCustom) View.VISIBLE else View.GONE
-        editBaseUrl.visibility = if (isCustom) View.VISIBLE else View.GONE
+//        val isCustom = AiProvider.entries
+//            .getOrNull(spProvider.selectedItemPosition) == AiProvider.CUSTOM
+//        lblBaseUrl.visibility = if (isCustom) View.VISIBLE else View.GONE
+//        editBaseUrl.visibility = if (isCustom) View.VISIBLE else View.GONE
     }
 
     private fun selectedProvider(): AiProvider =

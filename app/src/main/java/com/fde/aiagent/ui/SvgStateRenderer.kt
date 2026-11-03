@@ -426,7 +426,7 @@ class SvgStateRenderer(private val context: Context) {
         sb.append("  <text x=\"${nodeX + 12}\" y=\"${y + 18}\" font-size=\"12\" font-weight=\"bold\" fill=\"${p.errorText}\">")
             .append(context.getString(R.string.svg_error_banner)).append("</text>")
         lines.forEachIndexed { i, line ->
-            sb.append("  <text x=\"${nodeX + 12}\" y=\"${y + 36 + i * 16}\" font-size=\"11\" fill=\"${p.errorText}\">")
+            sb.append("  <text x=\"${nodeX + 12}\" y=\"${y + 36 + i * 16}\" font-size=\"12\" fill=\"${p.errorText}\">")
                 .append(e(line)).append("</text>")
         }
     }

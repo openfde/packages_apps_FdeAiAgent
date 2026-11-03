@@ -1,6 +1,7 @@
 package com.fde.aiagent.execution
 
 import android.content.Context
+import android.util.Log
 import com.fde.aiagent.R
 import com.fde.aiagent.ai.AiClient
 import com.fde.aiagent.ai.AiConfig
@@ -169,6 +170,7 @@ class AgentCoordinator(context: Context) {
                 }
             } catch (t: Throwable) {
                 val msg = "${t.javaClass.simpleName}: ${t.message}"
+                Log.e("err","msg "+msg)
                 emit(AgentEvent.Logged(appContext.getString(R.string.log_run_exception, msg)))
                 emit(AgentEvent.FlowFailed(appContext.getString(R.string.flow_failed_exception, msg)))
             } finally {

@@ -310,10 +310,10 @@ class MainActivity : Activity(), ExecutionListener {
             toast(getString(R.string.toast_select_provider))
             return
         }
-        if (cfg.provider() == AiProvider.CUSTOM && cfg.resolvedBaseUrl().isEmpty()) {
-            toast(getString(R.string.toast_fill_custom_base_url))
-            return
-        }
+//        if (cfg.provider() == AiProvider.CUSTOM && cfg.resolvedBaseUrl().isEmpty()) {
+//            toast(getString(R.string.toast_fill_custom_base_url))
+//            return
+//        }
         if (prompt.isEmpty()) {
             toast(getString(R.string.toast_enter_prompt))
             return
