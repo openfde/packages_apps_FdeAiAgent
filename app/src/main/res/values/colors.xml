@@ -60,7 +60,15 @@
     <color name="pc_text_secondary">#909399</color>
     <color name="pc_divider">#EBEEF5</color>
     <color name="pc_input_border">#DCDFE6</color>
+    <color name="pc_input_bg">#FFFFFF</color>
     <color name="pc_input_bg_disabled">#F5F7FA</color>
+
+    <!-- 错误提示条 -->
+    <color name="pc_error_bg">#FEF0F0</color>
+    <color name="pc_error_text">#E64848</color>
+
+    <!-- 主按钮禁用态 -->
+    <color name="pc_btn_primary_disabled">#99C7F5</color>
 
     <color name="pc_success">#67C23A</color>
     <color name="pc_warning">#E6A23C</color>

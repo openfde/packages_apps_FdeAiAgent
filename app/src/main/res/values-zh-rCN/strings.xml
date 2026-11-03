@@ -1,6 +1,273 @@
 <resources>
-    <string name="app_name">FDE初装应用</string>
+    <string name="app_name">FDE AI Agent</string>
 
+    <!-- ================= 顶栏 ================= -->
+    <string name="tv_subtitle">AI × Skill × AppFunctions</string>
+    <string name="status_ready">就绪</string>
+    <string name="home_config_entry">配置</string>
+
+    <!-- ================= ConfigActivity（API Key 配置页） ================= -->
+    <string name="config_title">API Key 配置</string>
+    <string name="config_section_title">AI 连接配置</string>
+    <string name="config_save">保存</string>
+    <string name="config_back">返回</string>
+    <string name="config_saved">配置已保存</string>
+
+    <!-- ================= AI 供应商 ================= -->
+    <string name="provider_deepseek">DeepSeek（深度求索）</string>
+    <string name="provider_qwen">通义千问（Qwen）</string>
+    <string name="provider_zhipu">智谱 AI（GLM）</string>
+    <string name="provider_kimi">Kimi（月之暗面）</string>
+    <string name="provider_gemini">Google Gemini</string>
+    <string name="provider_custom">自定义 OpenAI 兼容（Custom）</string>
+
+    <!-- ================= 左栏：智能体配置 ================= -->
+    <string name="section_agent_config">智能体配置</string>
+    <string name="label_provider">AI 供应商（Provider）</string>
+    <string name="label_api_key">API Key（在各平台申请）</string>
+    <string name="hint_api_key">sk-... 或 key-...</string>
+    <string name="label_model">模型（Model，留空用默认）</string>
+    <string name="hint_model">deepseek-chat / qwen-plus / glm-4-plus / gemini-2.5-flash ...</string>
+    <string name="label_base_url">Base URL（选择“自定义”时必填）</string>
+    <string name="hint_base_url">https://example.com/v1/chat/completions</string>
+    <string name="label_agent_prompt">智能体指令（Prompt）</string>
+    <string name="hint_agent_prompt">例如：帮我打开应用宝</string>
+    <string name="default_prompt">打开 /mnt/sdcard/Pictures/aa.png 这张图片预览</string>
+    <string name="label_voice_input">语音输入（对着麦克风说话即可）</string>
+    <string name="btn_voice_input">🎤 语音输入</string>
+    <string name="chk_auto_run">识别后自动运行</string>
+    <string name="voice_status_default">点击🎤开始语音输入</string>
+    <string name="available_skills">可用 Skill：gallery / file_search / file_op / settings / app_open / task_create / file_find / file_delete / curated_apps</string>
+    <string name="btn_run_agent">发送</string>
+    <string name="btn_open_gallery">打开相册</string>
+    <string name="btn_feature_desc">功能说明</string>
+    <string name="feature_desc_title">功能说明</string>
+    <string name="btn_clear_log">清空日志</string>
+    <string name="btn_open_settings">打开设置页</string>
+    <string name="settings_page_item_format">%1$s（%2$s）</string>
+    <string name="settings_page_name_wifi">Wi-Fi</string>
+    <string name="settings_page_name_display">显示</string>
+    <string name="settings_page_name_sound">声音</string>
+    <string name="settings_page_name_apps">应用</string>
+    <string name="settings_page_name_storage">存储</string>
+
+    <!-- ================= 中栏：执行流程 ================= -->
+    <string name="section_exec_flow">执行流程 · SVG 状态面板</string>
+    <string name="flow_subtitle">由统一执行事件实时更新</string>
+    <string name="error_banner_sample">错误提示示例</string>
+
+    <!-- ================= 右栏：运行日志 ================= -->
+    <string name="section_log">运行日志</string>
+    <string name="model_info_default">model: -</string>
+    <string name="log_waiting">等待运行…</string>
+
+    <!-- ================= 状态 / 语音输入 ================= -->
+    <string name="status_executing">执行中…</string>
+    <string name="status_done">完成</string>
+    <string name="status_failed">失败</string>
+    <string name="log_flow_finished">完成：%1$s</string>
+    <string name="log_flow_failed">失败：%1$s</string>
+
+    <string name="voice_stop_btn">⏹ 停止</string>
+    <string name="voice_no_permission">未授予录音权限，无法语音输入</string>
+    <string name="voice_listening">正在聆听…请对着麦克风说话</string>
+    <string name="voice_recognizing">识别中…</string>
+    <string name="voice_no_match">未识别到文字，请重试</string>
+    <string name="voice_recognized">识别成功：%1$s</string>
+    <string name="voice_recognized_confirm">识别成功，请确认指令后运行</string>
+
+    <!-- 离线语音识别（sherpa-onnx） -->
+    <string name="voice_model_loading">正在加载离线模型…</string>
+    <string name="voice_model_not_ready">离线模型加载中，请稍候再试</string>
+    <string name="voice_recog_partial">识别中：%1$s</string>
+    <string name="sherpa_assets_missing">未找到离线模型资产（%1$s），请确认 assets/sherpa 已打包</string>
+    <string name="sherpa_model_load_failed">加载离线模型失败：%1$s</string>
+    <string name="sherpa_model_not_ready">离线模型尚未加载完成，请稍候再试</string>
+    <string name="sherpa_mic_alloc_failed">无法初始化麦克风（getMinBufferSize 失败）</string>
+    <string name="sherpa_mic_open_failed">无法打开麦克风：%1$s</string>
+    <string name="sherpa_mic_failed">无法初始化麦克风（可能是录音权限或硬件问题）</string>
+    <string name="sherpa_recognize_error">识别过程出错：%1$s</string>
+
+    <string name="toast_fill_image_path">请填写图片路径</string>
+    <string name="toast_select_provider">请先配置 API Key（在首页右上角「⚙ 配置」中填写）</string>
+    <string name="toast_fill_custom_base_url">请填写自定义 Base URL</string>
+    <string name="toast_enter_prompt">请输入智能体指令</string>
+
+    <string name="log_open_image">===== 直接调用相册 AppFunction: openImage =====</string>
+    <string name="log_open_settings">===== 直接调用设置 AppFunction: openSettingsPage(%1$s) =====</string>
+    <string name="log_voice_input">🎤 语音输入: %1$s</string>
+    <string name="model_info_format">%1$s · model: %2$s</string>
+
+    <!-- ================= 协调器 / 执行 ================= -->
+    <string name="log_enter_instruction">请输入要执行的指令。</string>
+    <string name="log_task_running">已有任务正在执行，请等待完成。</string>
+    <string name="log_run_agent">===== 运行智能体 =====</string>
+    <string name="log_registered_skills">→ 已注册 Skills: %1$s</string>
+    <string name="plan_node_label">规划任务（理解用户意图）</string>
+    <string name="plan_done_direct_answer">无需执行 Skill，直接回答</string>
+    <string name="plan_done_choose_skill">选择 Skill: %1$s</string>
+    <string name="plan_done_choose_skills">规划完成，将依次执行 %1$d 个 Skill: %2$s</string>
+    <string name="log_execute_skill">→ 执行 Skill: %1$s</string>
+    <string name="log_execute_skill_multi">→ 执行 Skill %1$d/%2$d: %3$s</string>
+    <string name="log_multi_result">→ 全部 %1$d 个任务执行完毕，汇总：%2$s</string>
+    <string name="unknown_skill">未知 Skill</string>
+    <string name="node_failed_unknown_skill">未知 Skill: %1$s</string>
+    <string name="flow_failed_unknown_skill">模型选择了不存在的 Skill: %1$s</string>
+    <string name="log_skill_result">→ Skill 执行结果: %1$s</string>
+    <string name="log_run_exception">✖ 运行异常: %1$s</string>
+    <string name="flow_failed_exception">运行异常: %1$s</string>
+    <string name="log_direct_function">===== 直接调用 AppFunction: %1$s =====</string>
+    <string name="flow_failed_unknown_function">未知 AppFunction: %1$s</string>
+    <string name="check_node_label">权限检查（PermissionGuard）</string>
+    <string name="check_node_done">AppFunctions 可用（权限守卫通过）</string>
+    <string name="log_direct_ok">✔ %1$s</string>
+
+    <string name="feature_summary" formatted="false">===== 功能说明 =====\n\n本智能体 = AI 理解/规划 ＋ Skill 编排 ＋ 跨应用 AppFunction 执行。\n所选 AI 供应商负责理解指令并规划动作，Skill 编排多步骤流程，\nAppFunction 调用相册/设置/文件管理器等应用暴露的真实能力。\n\n【使用步骤】\n1. 点击右上角「⚙ 配置」选择 AI 供应商并填写 API Key（在各平台申请），模型可留空用默认；\n2. 在「智能体指令」框输入自然语言指令，点击「运行智能体」；\n3. 也可点击 🎤 语音输入，识别后勾选「识别后自动运行」便直接执行；\n4. 中栏 SVG 面板实时展示执行流程，右栏运行日志输出每一步的结果。\n\n【可用功能与示例指令】\n□ 相册媒体（gallery）：打开图片、播放视频、给图片加滤镜另存\n  例：打开 /sdcard/Download/bella.jpg\n  例：播放 /sdcard/Movies/clip.mp4\n  例：把 /sdcard/Download/a.jpg 加黑白滤镜另存\n\n□ 系统设置（settings）：打开设置页、调节亮度/音量/静音、深色模式\n  例：打开 Wi-Fi 设置 / 打开显示设置 / 打开应用设置\n  例：把屏幕调亮一点（dim 调暗）\n  例：把声音调大 50%（volume_down 调小）\n  例：静音 / 取消静音 / 打开深色模式 / 关闭深色模式\n  例：关闭深色模式并把亮度调到最高（支持一次执行多条指令）\n\n□ 打开应用（app_open）：按包名或应用名打开任意应用\n  例：打开设置 / 打开相册 / 打开 com.android.settings\n\n□ 文件管理（file_op）：删除（移入回收站）、移动、重命名、清空回收站\n  例：删除 桌面/a.txt\n  例：把 桌面/临时 里的文件移到 桌面/归档\n  例：把 报告.txt 改名为 报告2026.txt\n  例：清空回收站\n\n□ 文件搜索（file_search）：按后缀/关键字在目录中搜索文件\n  例：在 /mnt/sdcard/Pictures 里找 *.png\n\n□ 文件查找（file_find）：在文件夹下按名称/修改时间过滤条件查找文件、找大文件、找 N 天未用的\n  不常用文件（DocumentsUI 只读 AppFunction）\n  例：在 桌面 下找 *.pdf\n  例：找 桌面/Pictures 最近 3 个月没改过的所有文件\n  例：找 /mnt/sdcard 下超过 500MB 的文件\n  例：找 /mnt/sdcard/Downloads 里 30 天没用的文件\n\n□ 批量删除文件（file_delete）：按名称前缀/后缀或按最后修改时间删除匹配文件，或删除显式列出的\n  路径（移入回收站，可恢复）\n  例：删除 桌面/临时 下所有 .tmp 文件（递归）\n  例：删除 桌面/old 里 2026-01-01 之前修改的文件\n  例：删除 /mnt/sdcard/Download/a.png\n\n□ 任务记录（task_create）：把文本写入文件并回读校验\n  例：把“写周报”记录到 /data/local/tmp/task.txt\n\n□ FDE 精选应用商店（curated_apps，com.fde.download）：列出精选应用及其安装/更新状态、\n   后台下载并静默安装某个精选应用\n   例：有什么精选应用可以安装\n   例：从精选商店安装 微信（com.tencent.mm）\n\n【界面快捷入口】\n·  「清空日志」：清空右栏运行日志并重置 SVG 状态面板。</string>
+
+    <!-- ================= 权限守卫 ================= -->
+    <string name="guard_api_too_low">当前设备是 API %1$d，AppFunctions 需要 API %2$d。</string>
+    <string name="guard_no_manager">本设备没有 android.app.appfunctions.AppFunctionManager。</string>
+    <string name="guard_missing_permission">缺少 %1$s（特权/系统签名权限）。FdeAiAgent 需要以 privileged + platform 签名装入 system_ext 才会被授予该权限。</string>
+    <string name="describe_supported">AppFunctions 支持: %1$s</string>
+    <string name="describe_granted">已授予</string>
+    <string name="describe_not_granted">未授予</string>
+    <string name="describe_local_write">本地写入(CONTROL_SYSTEM): %1$s</string>
+    <string name="describe_local_write_partial">未授予（仅应用私有目录可写）</string>
+    <string name="describe_privileged_hint">提示：本应用需以 privileged + platform 签名装入 system_ext 才会被授予 EXECUTE_APP_FUNCTIONS。</string>
+
+    <!-- ================= AppFunction 分发器 ================= -->
+    <string name="fn_manager_unavailable">AppFunctionManager 不可用。</string>
+    <string name="fn_unknown_error">未知错误</string>
+    <string name="fn_failed_text">AppFunction %1$s（%2$s）返回失败：%3$s</string>
+    <string name="fn_status_suffix">，status=%1$s</string>
+    <string name="fn_invoked_text">已调用 %1$s#%2$s（%3$s）</string>
+    <string name="fn_status_returned">，返回 status=%1$s</string>
+    <string name="fn_no_status">（返回文档无 status 字段）</string>
+    <string name="fn_before_after">，调整前 %1$d%% → 调整后 %2$d%%</string>
+    <string name="fn_dark_on">，深色模式=开启</string>
+    <string name="fn_dark_off">，深色模式=关闭</string>
+    <string name="fn_muted_yes">，静音=是</string>
+    <string name="fn_muted_no">，静音=否</string>
+    <string name="fn_resolved_package">，应用包名=%1$s</string>
+    <string name="fn_resolved_app">，应用名=%1$s</string>
+    <string name="fn_result_path">，路径=%1$s</string>
+    <string name="fn_new_path">，新路径=%1$s</string>
+    <string name="fn_moved_count">，已移动 %1$d 项</string>
+    <string name="fn_deleted_count">，已删除 %1$d 项</string>
+    <string name="fn_output_path">，输出: %1$s</string>
+    <string name="fn_find_count">，找到 %1$d 个匹配</string>
+    <string name="fn_paths">，文件: %1$s</string>
+    <string name="fn_cancelled_yes">，用户在删除确认弹窗中取消了操作</string>
+    <string name="fn_call_failed">AppFunctions 调用失败：%1$s</string>
+    <string name="fn_submitted_yes">，已提交后台下载 + 静默安装</string>
+    <string name="fn_submitted_no">，未提交（已安装且是最新版本）</string>
+    <string name="fn_result_version">，版本=%1$s</string>
+    <string name="fn_result_message">，详情: %1$s</string>
+    <string name="fn_curated_apps">，精选应用（%1$d 个）: %2$s</string>
+    <string name="fn_curated_apps_truncated">（列表已截断）</string>
+    <string name="fn_app_state_installed"> 已安装</string>
+    <string name="fn_app_state_update"> 可更新</string>
+    <string name="fn_app_state_not_installed"> 未安装</string>
+
+    <!-- ================= Skill 引擎 ================= -->
+    <string name="log_skip_step">→ 跳过 %1$s（条件不满足: %2$s）</string>
+    <string name="log_step_ok">✔ %1$s: %2$s</string>
+    <string name="log_step_failed">✖ %1$s 失败: %2$s</string>
+    <string name="summary_step_failed">\u0027%1$s\u0027 在第 %2$d 步（%3$s）失败: %4$s</string>
+    <string name="log_skill_completed">✔ Skill \u0027%1$s\u0027 执行完成</string>
+    <string name="summary_completed">Skill \u0027%1$s\u0027 执行完成（%2$d 步）</string>
+    <string name="unknown_step_type">未知步骤类型: %1$s</string>
+    <string name="check_app_ok">✔ AppFunctions 可用（EXECUTE_APP_FUNCTIONS 已授予）</string>
+    <string name="check_local_ok">✔ 本地写入权限已授予（CONTROL_SYSTEM）</string>
+    <string name="check_local_fail">本地写入被权限守卫拦截（缺少 CONTROL_SYSTEM，仅应用私有目录可写）</string>
+    <string name="check_input_fail">缺少必填参数: %1$s</string>
+    <string name="check_input_ok">✔ 参数校验通过: %1$s</string>
+    <string name="check_ok">✔ 检查通过</string>
+    <string name="fn_not_in_catalog">目录中不存在 AppFunction: %1$s</string>
+
+    <!-- ================= 内置工具 ================= -->
+    <string name="builtin_unknown_action">未知内置动作: %1$s</string>
+    <string name="builtin_missing_param">缺少 %1$s 参数</string>
+    <string name="builtin_dir_missing">目录不存在或不是目录: %1$s</string>
+    <string name="builtin_scan_result">共找到 %1$d 个匹配文件（目录: %2$s，规则: %3$s）</string>
+    <string name="builtin_file_missing">文件不存在: %1$s</string>
+    <string name="builtin_read_head">文件开头 %1$d 行:\n</string>
+    <string name="builtin_empty_file">(空文件)</string>
+    <string name="builtin_write_blocked">权限守卫拦截: 不允许写入 %1$s（需要 CONTROL_SYSTEM 或应用私有目录）</string>
+    <string name="builtin_mkdir_failed">无法创建父目录: %1$s</string>
+
+    <!-- ================= AppFunction 描述（SVG 节点标签） ================= -->
+    <string name="appfunc_desc_open_image">在相册应用(com.fde.gallery3d)中打开指定绝对路径的图片预览</string>
+    <string name="appfunc_desc_play_video">在相册应用(com.fde.gallery3d)中播放指定绝对路径的视频</string>
+    <string name="appfunc_desc_edit_image">给指定图片添加滤镜并保存（filter 可选，如 black_white 黑白；outputPath 可指定输出路径）</string>
+    <string name="appfunc_desc_open_settings_page">打开指定的系统设置页面（page 可选 wifi / display / sound / apps / storage）</string>
+    <string name="appfunc_desc_adjust_brightness">调节屏幕亮度（action: brighten 调亮 / dim 调暗；step 可选，每次调节的亮度百分比）</string>
+    <string name="appfunc_desc_adjust_media_volume">调节媒体音量或静音（action: volume_up 调高 / volume_down 调低 / mute 静音 / unmute 取消静音；step 可选，仅 volume_up/volume_down 生效、每次调节的音量百分比）</string>
+    <string name="appfunc_desc_set_dark_theme">开启/关闭深色主题（action: on 开启深色模式 / off 关闭深色模式）</string>
+    <string name="appfunc_desc_open_app">按包名或应用名打开某个应用（packageName 或 appName，至少提供一个，同时提供时以 packageName 优先）</string>
+    <string name="appfunc_desc_delete_file">删除文件/文件夹（移入系统回收站，可恢复；path 必填，支持绝对路径或相对桌面的名称）</string>
+    <string name="appfunc_desc_move_files">把源文件夹下的所有文件/子文件夹移动到目标目录（sourcePath 与 destinationPath 必填，支持绝对路径或相对桌面的名称）</string>
+    <string name="appfunc_desc_rename_folder">重命名文件/文件夹（path 与 newName 必填，支持绝对路径或相对桌面的名称）</string>
+    <string name="appfunc_desc_empty_trash">清空系统回收站，永久删除回收站中的全部内容（无需参数，此操作不可恢复）</string>
+    <string name="appfunc_desc_find_files">按名称/修改时间等过滤条件在文件夹下查找文件（只读，直接子项）</string>
+    <string name="appfunc_desc_delete_files_by_name">删除文件夹下以指定前缀开头/后缀结尾的所有文件（移入回收站，可恢复）</string>
+    <string name="appfunc_desc_delete_files_by_time">删除文件夹下最后修改时间在指定时间点之前/之后的所有文件（移入回收站，可恢复）</string>
+    <string name="appfunc_desc_find_large_files">递归找出文件夹下的大文件（按大小降序返回）</string>
+    <string name="appfunc_desc_find_unused_files">递归找出 N 天未被访问/修改的不常用文件（最久未使用在前）</string>
+    <string name="appfunc_desc_delete_files">删除显式列出的文件路径（移入回收站，可恢复）</string>
+    <string name="appfunc_desc_get_available_apps">列出 FDE 精选应用商店中的应用及各自的安装/更新状态（无参数）</string>
+    <string name="appfunc_desc_download_and_install_app">后台下载并静默安装 FDE 精选应用商店中的应用（packageName 或 appName 至少一个）</string>
+
+    <!-- ================= AI 客户端 ================= -->
+    <string name="ai_no_api_key">未配置 API Key，请先在界面上选择供应商并填写 key。</string>
+    <string name="ai_no_choice">模型没有返回任何 choice。</string>
+    <string name="ai_direct_answer">← 模型直接回答（不调用 Skill）</string>
+    <string name="ai_unknown_tool">模型请求了未知工具，请重试。</string>
+    <string name="ai_missing_skill_param">模型返回的 %1$s 缺少 skill 参数。</string>
+    <string name="ai_http_error">AI HTTP %1$d: %2$s</string>
+    <string name="ai_gemini_http_error">Gemini HTTP %1$d: %2$s</string>
+    <string name="ai_plan_log">← 模型规划: %1$s</string>
+    <string name="ai_post_log">→ POST %1$s (provider=%2$s, model=%3$s)</string>
+    <string name="ai_prompt_intro">你是一个 Android 智能体，负责理解用户意图并把任务规划到已注册的 Skill 上执行。\n可用 Skill 如下：\n</string>
+    <string name="ai_prompt_skill_item">%1$d. %2$s — %3$s\n</string>
+    <string name="ai_prompt_skill_params">   参数: %1$s\n</string>
+    <string name="ai_prompt_rules">规则：\n- 每个用户指令都对应一个 Skill 任务（skill + inputs）：skill 必须是列表中的 id，inputs 按该 Skill 声明的参数填写。\n- 一次请求可能包含多条指令（例如「关闭深色模式并把亮度调到最高」），请把每条指令对应的任务一次性全部放进 run_skills 工具的 tasks 数组返回（不要只返回第一个，也不要拆成多次对话）；执行时会按数组顺序依次执行。\n- 有匹配的 Skill 任务时只调用 run_skills 工具；仅当用户只是闲聊、提问或没有任何 Skill 匹配（例如「需要登录、发消息」这类）时才直接回答，绝对不要编造 Skill 或工具。\n- 根据用户语气把每个任务的 inputs 填全；缺少关键参数时用合理默认值；确实缺失再要求用户补充。\n- 亮度调节：把亮度调到最高用 action=brighten、step=100，调到最低用 action=dim、step=100；音量同理，volume_step=100 为最大。\n- 路径必须是设备上的绝对路径。</string>
+    <string name="tool_skill_desc">要执行的 Skill id</string>
+    <string name="tool_tasks_desc">需要执行的 Skill 任务列表；每个元素是一个对象（含 skill 与 inputs 两个字段），一条用户指令对应一个任务。只要请求包含可执行的指令，就必须把所有任务一次性列在这里。</string>
+    <string name="tool_run_skill_desc">按用户指令执行一个或多个已注册的多步 Skill（tasks 数组可在一次调用里承载多条指令）</string>
+
+    <!-- ================= SVG 状态面板 ================= -->
+    <string name="svg_title">执行流程（SVG 状态面板）</string>
+
+    <!-- 聊天窗口文案 -->
+    <string name="chat_user_label">我</string>
+    <string name="chat_ai_label">AI</string>
+    <string name="chat_failed_suffix">（失败）</string>
+    <string name="svg_phase_idle">待机</string>
+    <string name="svg_phase_executing">执行中…</string>
+    <string name="svg_phase_executing_node">正在执行: %1$s</string>
+    <string name="svg_phase_done">完成</string>
+    <string name="svg_phase_failed">失败</string>
+    <string name="svg_legend_pending">等待</string>
+    <string name="svg_legend_running">执行</string>
+    <string name="svg_legend_done">成功</string>
+    <string name="svg_legend_failed">失败</string>
+    <string name="svg_legend_skipped">跳过</string>
+    <string name="svg_empty">" 暂无执行记录，运行一次任务后展示结果。"</string>
+    <string name="svg_error_banner">错误提示</string>
+    <string name="svg_log_box">运行日志（尾部）</string>
+    <string name="svg_status_pending">等待</string>
+    <string name="svg_status_running">执行中</string>
+    <string name="svg_status_done">成功</string>
+    <string name="svg_status_failed">失败</string>
+    <string name="svg_status_skipped">跳过</string>
+    <string name="svg_kind_plan">规划</string>
+    <string name="svg_kind_check">检查</string>
+    <string name="svg_kind_function">AppFunction</string>
+    <string name="svg_kind_builtin">内置工具</string>
+    <string name="svg_kind_report">汇总</string>
+
+    <!-- ================= (兼容保留的旧下载应用字符串) ================= -->
     <string name="skip">跳过</string>
     <!-- download app page -->
     <string name="download_app">下载app</string>

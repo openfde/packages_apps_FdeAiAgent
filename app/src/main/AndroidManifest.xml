@@ -1,31 +1,42 @@
-
+<?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
- package="com.fde.aiagent">
+    package="com.fde.aiagent">
 
-    <uses-permission
-        android:name="com.fde.permission.CONTROL_SYSTEM" />
-
-    <uses-permission
-        android:name="android.permission.INTERNET" />
+    <uses-permission android:name="com.fde.permission.CONTROL_SYSTEM" />
+    <uses-permission android:name="android.permission.INTERNET" />
 
     <!-- 跨应用执行 AppFunctions（调用 com.fde.gallery3d 的 openImage / playVideo） -->
-    <uses-permission
-        android:name="android.permission.EXECUTE_APP_FUNCTIONS" />
+    <uses-permission android:name="android.permission.EXECUTE_APP_FUNCTIONS" />
+
+    <!-- 语音输入：对着麦克风说话，识别成文字驱动智能体（RECORD_AUDIO 为运行时权限） -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
 
     <application
-        android:label="FDE AI Agent"
         android:allowBackup="false"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
         android:theme="@style/Theme.FdeDownload">
-
         <activity
             android:name=".MainActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
+
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-
+        <activity
+            android:name=".LaunchActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+        <activity
+            android:name=".ConfigActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+        <activity
+            android:name=".FeatureDescActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
     </application>
-</manifest>
 
+</manifest>

@@ -1,4 +1,12 @@
 
+android_library_import {
+    name: "sherpa-onnx-lib",
+    aars: ["app/libs/sherpa-onnx-2.0.1.aar"],
+    sdk_version: "system_current",
+    // 从 AAR 中提取 JNI 原生库（arm64-v8a / armeabi-v7a）并打进依赖它的 android_app
+    extract_jni: true,
+}
+
 android_app {
     name: "FdeAiAgent",
     srcs: [
@@ -29,7 +37,9 @@ android_app {
         "down_static_libs",
 		"kotlinx-coroutines-android",
         "kotlinx-coroutines-core",
-		"kotlin-stdlib",     ],
+		"kotlin-stdlib",
+        "sherpa-onnx-lib",
+    ],
 	manifest: "app/src/main/AndroidManifest.xml",
 }
 
