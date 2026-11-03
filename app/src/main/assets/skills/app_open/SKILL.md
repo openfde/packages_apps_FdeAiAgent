@@ -19,7 +19,7 @@ steps:
   - id: open_app
     type: function
     function: openApp
-    description: 跨应用按包名/应用名打开目标应用（packageName 或 appName 至少一个）
+    description: 按包名/应用名打开目标应用（packageName 或 appName 至少一个）
     inputs:
       packageName: "$input.packageName"
       appName: "$input.appName"

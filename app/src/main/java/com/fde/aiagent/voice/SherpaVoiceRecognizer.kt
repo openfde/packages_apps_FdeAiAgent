@@ -137,7 +137,8 @@ class SherpaVoiceRecognizer(context: Context) {
                 recognizer = rec
                 mainHandler.post { listener.onModelReady() }
             } catch (t: Throwable) {
-                Log.e("error","err: "+str(R.string.sherpa_model_load_failed))
+                t.printStackTrace()
+                //Log.e("error","err: "+str(R.string.sherpa_model_load_failed))
                // mainHandler.post { listener.onModelError(str(R.string.sherpa_model_load_failed, t.message ?: "")) }
             } finally {
                 loading = false

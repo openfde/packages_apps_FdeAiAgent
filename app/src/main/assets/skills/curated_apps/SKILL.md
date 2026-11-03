@@ -24,12 +24,12 @@ steps:
   - id: list_apps
     type: function
     function: com.fde.download.appfunctions.CuratedAppsAppFunctions#getAvailableApps
-    description: 跨应用列出 FDE 精选应用商店中的应用及安装/更新状态（list 填 true 时执行，无参数）
+    description: 列出 FDE 精选应用商店中的应用及安装/更新状态（list 填 true 时执行，无参数）
     run_when: '$input.list != ""'
   - id: install_app
     type: function
     function: com.fde.download.appfunctions.CuratedAppsAppFunctions#downloadAndInstallApp
-    description: 跨应用后台下载并静默安装精选应用（install 非空时执行，按包名/显示名识别）
+    description: 后台下载并静默安装精选应用（install 非空时执行，按包名/显示名识别）
     run_when: '$input.install != ""'
     inputs:
       packageName: "$input.install"

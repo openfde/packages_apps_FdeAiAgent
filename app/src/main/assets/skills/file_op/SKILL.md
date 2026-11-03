@@ -27,14 +27,14 @@ steps:
   - id: delete_file
     type: function
     function: deleteFile
-    description: 跨应用删除文件/文件夹并移入系统回收站（delete_path 非空时执行）
+    description: 删除文件/文件夹并移入系统回收站（delete_path 非空时执行）
     run_when: '$input.delete_path != ""'
     inputs:
       path: "$input.delete_path"
   - id: move_files
     type: function
     function: moveFiles
-    description: 跨应用把源文件夹下的所有文件/子文件夹移动到目标目录（move_source 非空时执行）
+    description: 把源文件夹下的所有文件/子文件夹移动到目标目录（move_source 非空时执行）
     run_when: '$input.move_source != ""'
     inputs:
       sourcePath: "$input.move_source"
@@ -42,7 +42,7 @@ steps:
   - id: rename_folder
     type: function
     function: renameFolder
-    description: 跨应用重命名文件/文件夹（rename_new_name 非空时执行）
+    description: 重命名文件/文件夹（rename_new_name 非空时执行）
     run_when: '$input.rename_new_name != ""'
     inputs:
       path: "$input.rename_path"
@@ -50,7 +50,7 @@ steps:
   - id: empty_trash
     type: function
     function: emptyTrash
-    description: 跨应用清空系统回收站（empty_trash 为 true 时执行）
+    description: 清空系统回收站（empty_trash 为 true 时执行）
     run_when: '$input.empty_trash == "true"'
   - id: report
     type: report

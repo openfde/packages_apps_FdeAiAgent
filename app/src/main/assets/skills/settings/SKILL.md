@@ -26,14 +26,14 @@ steps:
   - id: open_settings
     type: function
     function: openSettingsPage
-    description: 跨应用打开指定的系统设置页（page 非空时执行）
+    description: 打开指定的系统设置页（page 非空时执行）
     run_when: '$input.page != ""'
     inputs:
       page: "$input.page"
   - id: adjust_brightness
     type: function
     function: adjustBrightness
-    description: 跨应用调节屏幕亮度（action 为 brighten / dim 时执行）
+    description: 调节屏幕亮度（action 为 brighten / dim 时执行）
     run_when: '$input.action != ""'
     inputs:
       action: "$input.action"
@@ -41,7 +41,7 @@ steps:
   - id: adjust_volume
     type: function
     function: adjustMediaVolume
-    description: 跨应用调节媒体音量或静音（volume_action 为 volume_up / volume_down / mute / unmute 时执行）
+    description: 调节媒体音量或静音（volume_action 为 volume_up / volume_down / mute / unmute 时执行）
     run_when: '$input.volume_action != ""'
     inputs:
       action: "$input.volume_action"
@@ -49,13 +49,13 @@ steps:
   - id: set_dark_theme
     type: function
     function: setDarkTheme
-    description: 跨应用开启/关闭深色模式（dark_theme 为 on / off 时执行）
+    description: 开启/关闭深色模式（dark_theme 为 on / off 时执行）
     run_when: '$input.dark_theme != ""'
     inputs:
       action: "$input.dark_theme"
   - id: report
     type: report
-    template: "系统设置操作结果：打开设置页 => ${open_settings.output}；调节亮度 => ${adjust_brightness.output}；调节音量 => ${adjust_volume.output}；深色模式 => ${set_dark_theme.output}"
+    template: "调节亮度 => ${adjust_brightness.output}；调节音量 => ${adjust_volume.output}；深色模式 => ${set_dark_theme.output}"
 ---
 
 # settings — 系统设置控制（打开设置页 / 调节亮度 / 调节音量 / 深色模式）
