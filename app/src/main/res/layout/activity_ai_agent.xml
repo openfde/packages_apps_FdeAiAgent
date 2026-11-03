@@ -104,41 +104,41 @@
                     tools:text="@string/status_ready" />
 
 
-                <Button
+                <ImageButton
                     android:id="@+id/btnConfig"
-                    android:layout_width="wrap_content"
+                    android:layout_width="30dp"
                     android:layout_height="30dp"
-                    android:layout_marginStart="10dp"
+                    android:layout_marginStart="16dp"
                     android:background="@drawable/bg_btn_secondary"
-                    android:paddingStart="16dp"
-                    android:paddingEnd="16dp"
-                    android:stateListAnimator="@null"
-                    android:text="@string/home_config_entry"
-                    android:textColor="@color/pc_text_regular"
-                    android:textSize="12sp"
-                    android:textStyle="bold" />
+                    android:contentDescription="@string/home_config_entry"
+                    android:padding="4dp"
+                    android:scaleType="centerInside"
+                    android:src="@drawable/ic_config"
+                    android:stateListAnimator="@null" />
 
-                <Button
+                <ImageButton
                     android:id="@+id/btnGrantFunctionPermission"
-                    android:layout_width="wrap_content"
+                    android:layout_width="30dp"
                     android:layout_height="30dp"
-                    android:layout_marginStart="8dp"
+                    android:layout_marginStart="16dp"
                     android:background="@drawable/bg_btn_secondary"
-                    android:stateListAnimator="@null"
-                    android:text="@string/btn_feature_desc"
-                    android:textColor="@color/pc_text_regular"
-                    android:textSize="12sp" />
+                    android:contentDescription="@string/btn_feature_desc"
+                    android:padding="4dp"
+                    android:scaleType="centerInside"
+                    android:src="@drawable/ic_info"
+                    android:stateListAnimator="@null" />
 
-                <Button
+                <ImageButton
                     android:id="@+id/btnClearLog"
-                    android:layout_width="wrap_content"
+                    android:layout_width="30dp"
                     android:layout_height="30dp"
-                    android:layout_marginStart="8dp"
+                    android:layout_marginStart="16dp"
                     android:background="@drawable/bg_btn_secondary"
-                    android:stateListAnimator="@null"
-                    android:text="@string/btn_clear_log"
-                    android:textColor="@color/pc_text_regular"
-                    android:textSize="12sp" />
+                    android:contentDescription="@string/btn_clear_log"
+                    android:padding="4dp"
+                    android:scaleType="centerInside"
+                    android:src="@drawable/ic_clear"
+                    android:stateListAnimator="@null" />
             </LinearLayout>
 
 

@@ -6,6 +6,7 @@ import android.media.AudioRecord
 import android.media.MediaRecorder
 import android.os.Handler
 import android.os.Looper
+import android.util.Log
 import com.fde.aiagent.R
 import com.k2fsa.sherpa.onnx.EndpointConfig
 import com.k2fsa.sherpa.onnx.FeatureConfig
@@ -136,7 +137,8 @@ class SherpaVoiceRecognizer(context: Context) {
                 recognizer = rec
                 mainHandler.post { listener.onModelReady() }
             } catch (t: Throwable) {
-                mainHandler.post { listener.onModelError(str(R.string.sherpa_model_load_failed, t.message ?: "")) }
+                Log.e("error","err: "+str(R.string.sherpa_model_load_failed))
+               // mainHandler.post { listener.onModelError(str(R.string.sherpa_model_load_failed, t.message ?: "")) }
             } finally {
                 loading = false
             }

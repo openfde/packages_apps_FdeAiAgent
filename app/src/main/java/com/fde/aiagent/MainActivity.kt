@@ -6,13 +6,16 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.os.Bundle
+import android.view.KeyEvent
 import android.view.View
 import android.webkit.WebSettings
 import android.webkit.WebView
+import android.webkit.WebViewClient
 import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.CheckBox
 import android.widget.EditText
+import android.widget.ImageButton
 import android.widget.ScrollView
 import android.widget.Spinner
 import android.widget.TextView
@@ -118,6 +121,16 @@ class MainActivity : Activity(), ExecutionListener {
         // 自动运行开关变化即保存
         chkAutoRun.setOnCheckedChangeListener { _, _ -> saveSettings() }
 
+        editPrompt.setOnKeyListener { v, keyCode, event ->
+            if (keyCode == KeyEvent.KEYCODE_ENTER && event.action == KeyEvent.ACTION_DOWN) {
+                // 处理回车逻辑
+                runAgent()
+                true
+            } else {
+                false
+            }
+        }
+
         setupWebView()
 
         coordinator = AgentCoordinator(this)
@@ -128,7 +141,7 @@ class MainActivity : Activity(), ExecutionListener {
 
         findViewById<Button>(R.id.btnRunAgent).setOnClickListener { runAgent() }
         btnVoiceInput.setOnClickListener { toggleVoiceInput() }
-        findViewById<Button>(R.id.btnConfig).setOnClickListener {
+        findViewById<ImageButton>(R.id.btnConfig).setOnClickListener {
             startActivityForResult(
                 android.content.Intent(this, ConfigActivity::class.java),
                 REQ_CONFIG,
@@ -136,11 +149,11 @@ class MainActivity : Activity(), ExecutionListener {
         }
 
 
-        findViewById<Button>(R.id.btnGrantFunctionPermission).setOnClickListener {
+        findViewById<ImageButton>(R.id.btnGrantFunctionPermission).setOnClickListener {
             // 功能说明改为在独立的 FeatureDescActivity 页面展示
             startActivity(android.content.Intent(this, FeatureDescActivity::class.java))
         }
-        findViewById<Button>(R.id.btnClearLog).setOnClickListener {
+        findViewById<ImageButton>(R.id.btnClearLog).setOnClickListener {
             tvLog.setText(getString(R.string.log_waiting))
             chatEmpty = true
             renderer.reset()
@@ -398,7 +411,9 @@ class MainActivity : Activity(), ExecutionListener {
 
     private fun setupWebView() {
         svgView.settings.apply {
-            javaScriptEnabled = false
+            // 内容全部为本地生成的 HTML（baseURL 为 null，无外部加载），
+            // 开启 JS 以便渲染完成后精确滚动到底部。
+            javaScriptEnabled = true
             defaultTextEncodingName = "utf-8"
             setSupportZoom(false)
             builtInZoomControls = false
@@ -408,7 +423,20 @@ class MainActivity : Activity(), ExecutionListener {
             @Suppress("DEPRECATION")
             layoutAlgorithm = WebSettings.LayoutAlgorithm.SINGLE_COLUMN
         }
+        // 每次渲染完成后可靠地滑到最底部，保证最新的一问一答可见；
+        // 再延迟一次是覆盖页面加载后 / 布局重排导致的高度变化。
+        svgView.webViewClient = object : WebViewClient() {
+            override fun onPageFinished(view: WebView, url: String?) {
+                scrollSvgToBottom(view)
+                view.postDelayed({ scrollSvgToBottom(view) }, 150)
+            }
+        }
         renderSvg()
+    }
+
+    /** 按 HTML 实际渲染高度把 svgStateView 滚到最底部。 */
+    private fun scrollSvgToBottom(view: WebView) {
+        view.evaluateJavascript("window.scrollTo(0, document.body.scrollHeight);", null)
     }
 
     // ---------------- 配置持久化 / UI 工具 ----------------
