@@ -63,6 +63,7 @@ class AgentCoordinator(context: Context) {
         scope.launch {
             var client: AiClient? = null
             try {
+                emit(AgentEvent.UserMessage(p))
                 emit(AgentEvent.FlowStarted)
 //                emit(AgentEvent.Logged(appContext.getString(R.string.log_run_agent)))
 
@@ -265,10 +266,16 @@ class AgentCoordinator(context: Context) {
         }
         scope.launch {
             try {
+                val fn = AppFunctionCatalog.get(functionId)
+                val fnLabel =
+                    if (fn == null) functionId
+                    else if (fn.descRes != 0) appContext.getString(fn.descRes)
+                    else fn.description.ifEmpty { fn.id }
+                // 聊天窗口里以「执行 xxx」作为用户问题
+                emit(AgentEvent.UserMessage(fnLabel))
                 emit(AgentEvent.FlowStarted)
                 emit(AgentEvent.Logged(appContext.getString(R.string.log_direct_function, functionId)))
 
-                val fn = AppFunctionCatalog.get(functionId)
                 if (fn == null) {
                     emit(AgentEvent.FlowFailed(appContext.getString(R.string.flow_failed_unknown_function, functionId)))
                     return@launch
@@ -288,9 +295,6 @@ class AgentCoordinator(context: Context) {
                 }
                 emit(AgentEvent.NodeFinished(checkNode.asDone(appContext.getString(R.string.check_node_done))))
 
-                val fnLabel =
-                    if (fn.descRes != 0) appContext.getString(fn.descRes)
-                    else fn.description.ifEmpty { fn.id }
                 val fnNode = FlowNode("fn", fnLabel, FlowNodeKind.FUNCTION)
                 emit(AgentEvent.NodeStarted(fnNode.asRunning()))
                 when (val result = dispatcher.dispatch(fn, params)) {

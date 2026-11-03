@@ -9,16 +9,17 @@ import com.fde.aiagent.execution.FlowNodeKind
 import com.fde.aiagent.execution.FlowNodeStatus
 
 /**
- * SVG 状态面板 —— 把统一的执行事件渲染成 SVG 流程图。
+ * 聊天窗口式 SVG 状态面板 —— 把统一的执行事件渲染成一问一答的聊天界面。
  *
  * 订阅 [AgentEvent] 驱动内部状态，并**保留之前的结果、最新的在最底下**：
- *  - 一轮 Skill / AppFunction 执行 → 对应一个完整的状态面板（流程节点 / 日志 / 错误）；
- *  - 一次模型直接回答（[AgentEvent.Answered]，未调用任何 Skill / AppFunction）→
- *    对应一张回答卡片，直接展示回答结果；
- *  - 每一轮结束后，面板会被保留在历史里，新一轮的结果追加在面板最底部；
- *    「清除日志」按钮调用 [reset] 才会清空全部历史。
+ *  - [AgentEvent.UserMessage] → 右侧用户气泡（本轮的问题）；
+ *  - 一轮 Skill / AppFunction 执行 → 左侧 AI 回复块，内含流程状态面板
+ *    （节点 / 日志 / 错误），即「调用了 skill 或系统 appfunction 显示状态面板」；
+ *  - [AgentEvent.Answered]（模型直接回答，未调用任何 Skill / AppFunction）→
+ *    左侧 AI 回答气泡，直接显示回答结果。
  *
- * render() 生成多个堆叠的 SVG 字符串，由 Activity 的 WebView 加载展示。
+ * 每一轮结束后面板保留在历史里，新一轮追加在最底部；[reset] 才会清空全部历史。
+ * render() 生成聊天窗口的 HTML 字符串，由 Activity 的 WebView 加载展示。
  * 所有文案来自 @string/…（自动适配中英文）；颜色根据系统 uiMode 在浅色/深色调色板间切换。
  */
 class SvgStateRenderer(private val context: Context) {
@@ -46,6 +47,10 @@ class SvgStateRenderer(private val context: Context) {
         val pillDoneFg: String,
         val pillFailedBg: String,
         val pillFailedFg: String,
+        val chatUserBg: String,
+        val chatUserFg: String,
+        val chatAiBg: String,
+        val chatAiFg: String,
     )
 
     private val lightPalette = Palette(
@@ -68,6 +73,10 @@ class SvgStateRenderer(private val context: Context) {
         pillDoneFg = "#67C23A",
         pillFailedBg = "#FEF0F0",
         pillFailedFg = "#F56C6C",
+        chatUserBg = "#4A7DFF",
+        chatUserFg = "#FFFFFF",
+        chatAiBg = "#FFFFFF",
+        chatAiFg = "#303133",
     )
 
     private val darkPalette = Palette(
@@ -90,6 +99,10 @@ class SvgStateRenderer(private val context: Context) {
         pillDoneFg = "#67C23A",
         pillFailedBg = "#3A2326",
         pillFailedFg = "#F56C6C",
+        chatUserBg = "#3B5BC7",
+        chatUserFg = "#FFFFFF",
+        chatAiBg = "#1D2126",
+        chatAiFg = "#E5EAF3",
     )
 
     /** 当前是否深色模式（每次渲染实时读取系统配置）。 */
@@ -112,11 +125,12 @@ class SvgStateRenderer(private val context: Context) {
     private val nodeStep = 78
     private val flowTop = 92
     private val maxLogTail = 6
-    /** 相邻两块面板之间的垂直间距。 */
-    private val panelGap = 14
 
     // ---- 面板模型（保留之前的结果，最新在最底下）----
     private sealed class Panel
+
+    /** 用户消息（本轮的问题）。 */
+    private class UserPanel(val text: String) : Panel()
 
     /** 一轮 Skill / AppFunction 执行的状态面板快照。 */
     private class FlowPanel(
@@ -127,7 +141,7 @@ class SvgStateRenderer(private val context: Context) {
         val phaseLabel: String,
     ) : Panel()
 
-    /** 一次直接回答（未调度任何 Skill / AppFunction）的答案卡片。 */
+    /** 一次直接回答（未调度任何 Skill / AppFunction）的答案。 */
     private class AnswerPanel(val text: String) : Panel()
 
     /** 已完成并保留的历史面板（旧 → 新）。 */
@@ -158,8 +172,19 @@ class SvgStateRenderer(private val context: Context) {
 
     fun onEvent(event: AgentEvent) {
         when (event) {
+            is AgentEvent.UserMessage -> {
+                // 上一轮 AI 回复（当前底部面板）先保留进历史，再记录用户问题
+                if (phase != Phase.IDLE) {
+                    panels.add(
+                        FlowPanel(LinkedHashMap(nodes), ArrayList(logTail), error, phase, phaseLabel),
+                    )
+                }
+                resetCurrent()
+                panels.add(UserPanel(event.text))
+            }
+
             is AgentEvent.FlowStarted -> {
-                // 上一轮已经结束的流程面板先保留进历史，再开启新的一轮
+                // 兜底：没有 UserMessage 时也让上一轮结束的流程面板保留进历史
                 if (phase != Phase.IDLE) {
                     panels.add(
                         FlowPanel(LinkedHashMap(nodes), ArrayList(logTail), error, phase, phaseLabel),
@@ -195,7 +220,7 @@ class SvgStateRenderer(private val context: Context) {
             }
 
             is AgentEvent.Answered -> {
-                // 直接回答：不展示流程面板，丢弃未完成的流程节点，仅保留回答卡片
+                // 直接回答：丢弃未完成的流程节点，仅保留回答气泡
                 panels.add(AnswerPanel(event.text))
                 resetCurrent()
             }
@@ -215,47 +240,83 @@ class SvgStateRenderer(private val context: Context) {
         }
     }
 
-    /** 生成完整 SVG 字符串：历史面板（含回答卡片）+ 当前进行中的一轮，按时间顺序从上到下堆叠。 */
+    /** 生成聊天窗口 HTML：历史面板 + 当前进行中的一轮，按时间顺序从上到下堆叠（最新在最底下）。 */
     fun render(): String {
         val p = palette
         val sb = StringBuilder()
 
-        if (panels.isEmpty() && phase == Phase.IDLE) {
-            renderEmpty(sb, p)
-            return sb.toString()
-        }
+        sb.append("<style>")
+        sb.append("html,body{background:").append(p.svgBg).append(";}")
+        sb.append(".chat{width:100%;box-sizing:border-box;}")
+        sb.append(".row{display:flex;width:100%;margin-bottom:12px;}")
+        sb.append(".row.user{justify-content:flex-end;}")
+        sb.append(".row.ai{justify-content:flex-start;}")
+        sb.append(".bubble{max-width:85%;padding:10px 13px;border-radius:12px;font-size:13px;line-height:1.6;white-space:pre-wrap;word-break:break-word;}")
+        sb.append(".bubble.user{background:").append(p.chatUserBg).append(";color:").append(p.chatUserFg).append(";border-top-right-radius:4px;}")
+        sb.append(".bubble.ai{background:").append(p.chatAiBg).append(";color:").append(p.chatAiFg).append(";border:1px solid ").append(p.cardBorder).append(";border-top-left-radius:4px;}")
+        sb.append(".who{display:block;font-size:11px;opacity:.8;margin-bottom:3px;}")
+        sb.append(".ai-block{width:100%;}")
+        sb.append(".ai-block svg{max-width:100%;height:auto;}")
+        sb.append(".empty{color:").append(p.textSecondary).append(";font-size:13px;padding:18px 4px;}")
+        sb.append("</style>")
 
-        for (panel in panels) {
-            when (panel) {
-                is FlowPanel -> renderFlow(sb, p, panel)
-                is AnswerPanel -> renderAnswer(sb, p, panel)
+        sb.append("<div class=\"chat\">")
+
+        if (panels.isEmpty() && phase == Phase.IDLE) {
+            sb.append("<div class=\"empty\">").append(e(context.getString(R.string.svg_empty))).append("</div>")
+        } else {
+            for (panel in panels) {
+                when (panel) {
+                    is UserPanel -> renderUserBubble(sb, panel)
+                    is AnswerPanel -> renderAnswerBubble(sb, panel)
+                    is FlowPanel -> renderFlowBlock(sb, panel)
+                }
+            }
+
+            // 当前进行中的一轮（尚未被下一轮替换）也展示在最底下
+            if (phase != Phase.IDLE) {
+                renderFlowBlock(
+                    sb,
+                    FlowPanel(LinkedHashMap(nodes), ArrayList(logTail), error, phase, phaseLabel),
+                )
             }
         }
 
-        // 当前进行中的一轮（尚未被下一轮 FlowStarted 替换）始终展示在最底下
-        if (phase != Phase.IDLE) {
-            renderFlow(sb, p, FlowPanel(LinkedHashMap(nodes), ArrayList(logTail), error, phase, phaseLabel))
-        }
-
+        sb.append("</div>")
         return sb.toString()
     }
 
-    // ---------- 面板绘制 ----------
+    // ---------- 聊天元素绘制 ----------
 
-    /** 空状态占位。 */
-    private fun renderEmpty(sb: StringBuilder, p: Palette) {
-        val totalH = 160
-        openPanelDiv(sb)
-        sb.append("<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"$W\" height=\"$totalH\" viewBox=\"0 0 $W $totalH\">")
-        sb.append("  <rect width=\"$W\" height=\"$totalH\" fill=\"${p.svgBg}\"/>")
-        sb.append("  <text x=\"34\" y=\"88\" font-size=\"13\" fill=\"${p.textSecondary}\">")
-            .append(e(context.getString(R.string.svg_empty))).append("</text>")
-        sb.append("</svg>")
-        closePanelDiv(sb)
+    /** 用户问题 → 右侧气泡。 */
+    private fun renderUserBubble(sb: StringBuilder, panel: UserPanel) {
+        sb.append("<div class=\"row user\"><div class=\"bubble user\">")
+        sb.append("<span class=\"who\">").append(e(context.getString(R.string.chat_user_label))).append("</span>")
+        sb.append(e(panel.text))
+        sb.append("</div></div>")
     }
 
-    /** 一轮流程的状态面板（标题 + 阶段胶囊 + 图例 + 节点 + 日志/错误）。 */
-    private fun renderFlow(sb: StringBuilder, p: Palette, panel: FlowPanel) {
+    /** 直接回答 → 左侧回答气泡。 */
+    private fun renderAnswerBubble(sb: StringBuilder, panel: AnswerPanel) {
+        val text = panel.text.trim().ifEmpty { "…" }
+        sb.append("<div class=\"row ai\"><div class=\"bubble ai\">")
+        sb.append("<span class=\"who\">").append(e(context.getString(R.string.chat_ai_label))).append("</span>")
+        sb.append(e(text))
+        sb.append("</div></div>")
+    }
+
+    /** 一轮 Skill / AppFunction 执行 → 左侧 AI 回复块，内含 SVG 状态面板。 */
+    private fun renderFlowBlock(sb: StringBuilder, panel: FlowPanel) {
+        sb.append("<div class=\"row ai\"><div class=\"ai-block\">")
+        sb.append(flowSvg(panel))
+        sb.append("</div></div>")
+    }
+
+    /** 生成完整的 SVG 状态面板（带自己的标题 / 阶段胶囊 / 图例 / 节点 / 日志 / 错误）。 */
+    private fun flowSvg(panel: FlowPanel): String {
+        val p = palette
+        val sb = StringBuilder()
+
         val errorLines = panel.error?.let { wrap(it, 52) } ?: emptyList()
         val hasLogs = panel.logTail.isNotEmpty()
 
@@ -265,7 +326,6 @@ class SvgStateRenderer(private val context: Context) {
         val totalH = flowTop + flowH + 8 + errorH + (if (errorH > 0) 10 else 0) +
             (if (logH > 0) 10 else 0) + logH + 16
 
-        openPanelDiv(sb)
         sb.append("<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"$W\" height=\"$totalH\" viewBox=\"0 0 $W $totalH\">")
         sb.append("  <rect width=\"$W\" height=\"$totalH\" fill=\"${p.svgBg}\"/>")
 
@@ -282,58 +342,10 @@ class SvgStateRenderer(private val context: Context) {
         }
 
         sb.append("</svg>")
-        closePanelDiv(sb)
+        return sb.toString()
     }
 
-    /** 一次直接回答的答案卡片（标题 + 阶段胶囊 + 回答正文）。 */
-    private fun renderAnswer(sb: StringBuilder, p: Palette, panel: AnswerPanel) {
-        val text = panel.text.trim().ifEmpty { "…" }
-        val textLines = wrapAnswer(text, 48)
-        val lineH = 18
-        val textTop = 60
-        val textH = textLines.size * lineH
-        val totalH = textTop + textH + 16
-
-        openPanelDiv(sb)
-        sb.append("<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"$W\" height=\"$totalH\" viewBox=\"0 0 $W $totalH\">")
-        sb.append("  <rect width=\"$W\" height=\"$totalH\" fill=\"${p.svgBg}\"/>")
-
-        // 卡片
-        sb.append("  <rect x=\"$nodeX\" y=\"10\" width=\"$nodeW\" height=\"${totalH - 20}\" rx=\"10\" fill=\"${p.cardBg}\" stroke=\"${p.cardBorder}\"/>")
-        // 左侧状态条（回答 → 完成色）
-        sb.append("  <rect x=\"$nodeX\" y=\"10\" width=\"6\" height=\"${totalH - 20}\" rx=\"3\" fill=\"${p.pillDoneFg}\"/>")
-
-        // 标题
-        sb.append("  <text x=\"${nodeX + 18}\" y=\"36\" font-size=\"14\" font-weight=\"bold\" fill=\"${p.textPrimary}\">")
-            .append(e(context.getString(R.string.svg_answer_title))).append("</text>")
-
-        // 阶段胶囊：完成
-        val pillText = context.getString(R.string.svg_phase_done)
-        val pillW = (textWidth(pillText, 12) + 26).coerceAtLeast(60)
-        val pillX = W - pillW - 34
-        sb.append("  <rect x=\"$pillX\" y=\"18\" width=\"$pillW\" height=\"24\" rx=\"12\" fill=\"${p.pillDoneBg}\"/>")
-        sb.append("  <text x=\"").append(pillX + pillW / 2).append("\" y=\"36\" font-size=\"12\" text-anchor=\"middle\" fill=\"${p.pillDoneFg}\">")
-            .append(e(pillText)).append("</text>")
-
-        // 回答正文
-        textLines.forEachIndexed { i, line ->
-            sb.append("  <text x=\"${nodeX + 18}\" y=\"${textTop + i * lineH}\" font-size=\"13\" fill=\"${p.textRegular}\">")
-                .append(e(line)).append("</text>")
-        }
-
-        sb.append("</svg>")
-        closePanelDiv(sb)
-    }
-
-    // ---------- 单块面板内部绘制 ----------
-
-    private fun openPanelDiv(sb: StringBuilder) {
-        sb.append("<div style=\"margin-bottom:${panelGap}px\">")
-    }
-
-    private fun closePanelDiv(sb: StringBuilder) {
-        sb.append("</div>")
-    }
+    // ---------- SVG 内部绘制 ----------
 
     private fun drawHeader(sb: StringBuilder, p: Palette, panelPhase: Phase, panelLabel: String) {
         // 标题
@@ -494,25 +506,6 @@ class SvgStateRenderer(private val context: Context) {
         return lines
     }
 
-    /** 回答正文换行：保留原有换行，超长行按字符宽度折行。 */
-    private fun wrapAnswer(text: String, maxChars: Int): List<String> {
-        val lines = ArrayList<String>()
-        for (rawLine in text.split("\n")) {
-            var line = rawLine.trimEnd()
-            if (line.isEmpty()) {
-                lines.add("")
-                continue
-            }
-            while (line.length > maxChars) {
-                val cut = line.indexOf(' ', maxChars).let { if (it in 0..maxChars + 20) it else maxChars }
-                lines.add(line.substring(0, cut.coerceAtLeast(1)).trimEnd())
-                line = line.substring(cut.coerceAtLeast(1)).trimStart()
-            }
-            lines.add(line)
-        }
-        return lines
-    }
-
     /** 粗略文本宽度（CJK 按全角估算），用于胶囊/图例定位。 */
     private fun textWidth(text: String, fontSize: Int): Int {
         var w = 0
@@ -522,7 +515,7 @@ class SvgStateRenderer(private val context: Context) {
         return w
     }
 
-    /** SVG 文本转义。 */
+    /** HTML/SVG 文本转义。 */
     private fun e(text: String): String = text
         .replace("&", "&amp;")
         .replace("<", "&lt;")

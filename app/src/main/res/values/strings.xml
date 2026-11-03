@@ -238,7 +238,11 @@
 
     <!-- ================= SVG state panel ================= -->
     <string name="svg_title">Execution Flow (SVG Panel)</string>
-    <string name="svg_answer_title">AI Answer</string>
+
+    <!-- chat window labels -->
+    <string name="chat_user_label">Me</string>
+    <string name="chat_ai_label">AI</string>
+    <string name="chat_failed_suffix"> (failed)</string>
     <string name="svg_phase_idle">Idle</string>
     <string name="svg_phase_executing">Executing…</string>
     <string name="svg_phase_executing_node">Executing: %1$s</string>

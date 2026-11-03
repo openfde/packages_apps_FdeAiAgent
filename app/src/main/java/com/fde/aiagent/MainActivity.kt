@@ -60,6 +60,9 @@ class MainActivity : Activity(), ExecutionListener {
     private lateinit var prefs: SharedPreferences
     private lateinit var coordinator: AgentCoordinator
 
+    /** 聊天窗口是否仍显示占位文案（第一条消息起清除）。 */
+    private var chatEmpty = true
+
     /** 纯离线中文语音识别（sherpa-onnx，模型内置在 assets）。 */
     private var voiceRecognizer: SherpaVoiceRecognizer? = null
 
@@ -139,6 +142,7 @@ class MainActivity : Activity(), ExecutionListener {
         }
         findViewById<Button>(R.id.btnClearLog).setOnClickListener {
             tvLog.setText(getString(R.string.log_waiting))
+            chatEmpty = true
             renderer.reset()
             tvError.visibility = View.GONE
             setStatus(getString(R.string.status_ready), R.color.pc_text_secondary)
@@ -256,9 +260,14 @@ class MainActivity : Activity(), ExecutionListener {
         }
         editPrompt.setText(text)
         editPrompt.setSelection(text.length)
-        appendLog(getString(R.string.log_voice_input, text))
         tvVoiceStatus.text = getString(R.string.voice_recognized, text)
-        if (chkAutoRun.isChecked) runAgent() else toast(getString(R.string.voice_recognized_confirm))
+        if (chkAutoRun.isChecked) {
+            // 自动运行：runAgent 里会把问题加入聊天窗口
+            runAgent()
+        } else {
+            appendChatUser(text)
+            toast(getString(R.string.voice_recognized_confirm))
+        }
     }
 
     /** 读取共享配置，同步右上角 model 信息（AI 配置在 ConfigActivity 编辑）。 */
@@ -315,8 +324,16 @@ class MainActivity : Activity(), ExecutionListener {
                 renderSvg()
             }
 
+            is AgentEvent.UserMessage -> {
+                // 聊天窗口：显示用户问题，再展示后续的 AI 回复
+                renderer.onEvent(event)
+                appendChatUser(event.text)
+                renderSvg()
+            }
+
             is AgentEvent.Logged -> {
-                appendLog(event.text)
+                // 原始运行日志不再进聊天窗口，仅汇入状态面板的日志尾部
+                renderer.onEvent(event)
             }
 
             is AgentEvent.NodeStarted,
@@ -339,20 +356,21 @@ class MainActivity : Activity(), ExecutionListener {
 
             is AgentEvent.Answered -> {
                 renderer.onEvent(event)
+                appendChatAi(event.text)
                 setStatus(getString(R.string.status_done), R.color.pc_success)
                 renderSvg()
             }
 
             is AgentEvent.FlowFinished -> {
                 renderer.onEvent(event)
-                appendLog(getString(R.string.log_flow_finished, event.summary))
+                appendChatAi(event.summary)
                 setStatus(getString(R.string.status_done), R.color.pc_success)
                 renderSvg()
             }
 
             is AgentEvent.FlowFailed -> {
                 renderer.onEvent(event)
-                appendLog(getString(R.string.log_flow_failed, event.error))
+                appendChatAi(event.error, failed = true)
                 showError(event.error)
                 setStatus(getString(R.string.status_failed), R.color.pc_danger)
                 renderSvg()
@@ -408,11 +426,24 @@ class MainActivity : Activity(), ExecutionListener {
         return name.substringBeforeLast('.').ifEmpty { name }
     }
 
-    private fun appendLog(line: String) {
+    /** 聊天窗口：追加一个「一问一答」的消息块（用户问题 / AI 回复），最新在最底下。 */
+    private fun appendChat(who: String, text: String, failed: Boolean = false) {
+        if (chatEmpty) {
+            tvLog.setText("")
+            chatEmpty = false
+        }
+        val label = if (failed) "$who${getString(R.string.chat_failed_suffix)}" else who
+        val block = "── $label ──\n$text"
         val prev = tvLog.text.toString()
-        tvLog.setText(prev + (if (prev.endsWith("\n") || prev.isEmpty()) "" else "\n") + line)
+        tvLog.setText((if (prev.isEmpty()) "" else prev + "\n\n") + block)
         svLog.post { svLog.fullScroll(View.FOCUS_DOWN) }
     }
+
+    private fun appendChatUser(text: String) =
+        appendChat(getString(R.string.chat_user_label), text)
+
+    private fun appendChatAi(text: String, failed: Boolean = false) =
+        appendChat(getString(R.string.chat_ai_label), text, failed)
 
     private fun toast(msg: String) {
         Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()

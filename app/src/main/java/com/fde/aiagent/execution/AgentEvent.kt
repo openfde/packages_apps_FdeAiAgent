@@ -12,6 +12,9 @@ sealed interface AgentEvent {
     /** 一次新的执行开始（清空上一轮的流程节点）。 */
     data object FlowStarted : AgentEvent
 
+    /** 本轮用户输入的问题（驱动聊天窗口展示用户气泡 / 一问一答）。 */
+    data class UserMessage(val text: String) : AgentEvent
+
     /** 某个流程节点开始执行（携带处于 RUNNING 状态的节点）。 */
     data class NodeStarted(val node: FlowNode) : AgentEvent
 

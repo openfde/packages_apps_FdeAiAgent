@@ -146,25 +146,19 @@
                 android:layout_width="match_parent"
                 android:layout_height="0dp"
                 android:layout_weight="1"
-                android:background="@drawable/bg_console"
                 android:clipToPadding="false"
                 android:fadeScrollbars="false"
                 android:fillViewport="true"
                 android:padding="14dp"
                 android:scrollbars="vertical">
 
-                <TextView
-                    android:id="@+id/tvAgentLog"
+                <WebView
+                    android:id="@+id/svgStateView"
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:breakStrategy="simple"
-                    android:fontFamily="monospace"
-                    android:lineSpacingExtra="3dp"
-                    android:scrollHorizontally="false"
-                    android:text="@string/log_waiting"
-                    android:textColor="@color/pc_console_text"
-                    android:textIsSelectable="true"
-                    android:textSize="13sp" />
+                    android:layout_height="match_parent"
+                    android:background="@color/pc_window_bg" />
+
+
             </ScrollView>
 
 
@@ -360,12 +354,18 @@
                 android:layout_marginBottom="10dp"
                 android:background="@color/pc_divider" />
 
-            <WebView
-                android:id="@+id/svgStateView"
+            <TextView
+                android:id="@+id/tvAgentLog"
                 android:layout_width="match_parent"
-                android:layout_height="0dp"
-                android:layout_weight="1"
-                android:background="@color/pc_window_bg" />
+                android:layout_height="wrap_content"
+                android:breakStrategy="simple"
+                android:fontFamily="monospace"
+                android:lineSpacingExtra="3dp"
+                android:scrollHorizontally="false"
+                android:text="@string/log_waiting"
+                android:textColor="@color/pc_console_text"
+                android:textIsSelectable="true"
+                android:textSize="13sp" />
 
             <!-- 错误提示条（由执行事件驱动，默认隐藏） -->
             <TextView

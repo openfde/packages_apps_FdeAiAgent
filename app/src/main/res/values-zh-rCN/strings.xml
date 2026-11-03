@@ -238,7 +238,11 @@
 
     <!-- ================= SVG 状态面板 ================= -->
     <string name="svg_title">执行流程（SVG 状态面板）</string>
-    <string name="svg_answer_title">AI 回答</string>
+
+    <!-- 聊天窗口文案 -->
+    <string name="chat_user_label">我</string>
+    <string name="chat_ai_label">AI</string>
+    <string name="chat_failed_suffix">（失败）</string>
     <string name="svg_phase_idle">待机</string>
     <string name="svg_phase_executing">执行中…</string>
     <string name="svg_phase_executing_node">正在执行: %1$s</string>
